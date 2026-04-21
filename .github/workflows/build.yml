@@ -95,7 +95,7 @@ jobs:
           TAG="${{ steps.bump_version.outputs.NEW_TAG }}"
           VERSION="${TAG#v}"
 
-          DOWNLOAD_URL="https://github.com/Akinus21/aktools/releases/download/${TAG}/aktools-${VERSION}-linux-x86_64"
+          DOWNLOAD_URL="https://github.com/Akinus21/aktools/releases/download/${TAG}/aktools"
 
           curl -sL "$DOWNLOAD_URL" -o /tmp/aktools
           SHA=$(sha256sum /tmp/aktools | cut -d' ' -f1)
