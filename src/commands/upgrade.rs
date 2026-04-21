@@ -1,3 +1,4 @@
+use std::io;
 use std::path::PathBuf;
 
 const REPO: &str = "Akinus21/aktools";
@@ -76,7 +77,7 @@ pub fn execute() -> i32 {
 
     match ureq::get(&download_url).call() {
         Ok(response) => {
-            if let Err(e) = response.into_reader().copy_to(&mut file) {
+            if let Err(e) = std::io::copy(&mut response.into_reader(), &mut file) {
                 println!("Failed to download: {}", e);
                 return 1;
             }
@@ -117,13 +118,19 @@ pub fn execute() -> i32 {
     }
 
     println!("Successfully updated to v{}", latest_tag);
-    println!("Restart aktools to use the new version.");
 
     #[cfg(unix)]
     {
-        use std::process::Command;
+        use std::os::unix::process::CommandExt;
         println!("Restarting...");
-        let _ = Command::new(&current_exe).args(std::env::args().skip(1)).exec();
+        let _ = std::process::Command::new(&current_exe)
+            .args(std::env::args().skip(1))
+            .exec();
+    }
+
+    #[cfg(not(unix))]
+    {
+        println!("Please restart aktools to use the new version.");
     }
 
     0
