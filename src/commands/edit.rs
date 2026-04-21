@@ -2,7 +2,7 @@ use std::io::Write;
 use std::path::Path;
 use crate::modules::ModuleManager;
 
-pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: Option<String>) -> i32 {
+pub fn execute(modules_dir: &Path, _registry_path: &Path, module_name: Option<String>) -> i32 {
     let modules = match ModuleManager::scan_modules(modules_dir) {
         Ok(m) => m,
         Err(e) => {
