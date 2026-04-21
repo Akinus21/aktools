@@ -9,8 +9,67 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - run: cargo build --release
-      - run: cargo test
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libxkbcommon-dev libwayland-dev pkg-config
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build
+        id: build
+        run: |
+          set -o pipefail
+          cargo build --release 2>&1 | tee build.log
+        shell: bash
+
+      - name: Upload artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: aktools-build
+          path: target/release/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Notify webhook on build completion
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            BUILD_STATUS="success"
+            ERRORS=""
+          else
+            BUILD_STATUS="failure"
+            ERRORS=$(cat build.log 2>/dev/null | tail -150 || echo "Build failed")
+          fi
+          PAYLOAD=$(jq -n \
+            --arg status "$BUILD_STATUS" \
+            --arg errors "$ERRORS" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg sha "${{ github.sha }}" \
+            '{status: $status, errors: $errors, run_url: $run_url, sha: $sha}')
+          SIG=$(echo -n "$PAYLOAD" | \
+            openssl dgst -sha256 -hmac "${{ secrets.WEBHOOK_SECRET }}" | \
+            awk '{print "sha256="$2}')
+          curl -fsSL -X POST \
+            -H "Content-Type: application/json" \
+            -H "X-GitHub-Event: build_complete" \
+            -H "X-Hub-Signature-256: $SIG" \
+            -d "$PAYLOAD" \
+            "${{ secrets.WEBHOOK_URL }}" || true
