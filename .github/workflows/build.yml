@@ -48,28 +48,28 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-- name: Bump version
+      - name: Bump version
         id: bump_version
         if: success() && github.event_name != 'pull_request'
         run: |
           git fetch --tags
-          
+
           find_next_tag() {
             local last_tag="$1"
             IFS='.' read -r major minor <<< "${last_tag#v}"
             local new_minor=$(printf "%02d" $((10#$minor + 1)))
             echo "v${major}.${new_minor}"
           }
-          
+
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00")
           echo "Last tag: $LAST_TAG"
-          
+
           NEW_TAG=$(find_next_tag "$LAST_TAG")
           while git rev-parse "$NEW_TAG" >/dev/null 2>&1; do
             echo "Tag $NEW_TAG exists, finding next..."
             NEW_TAG=$(find_next_tag "$NEW_TAG")
           done
-          
+
           echo "New tag: $NEW_TAG"
           git tag $NEW_TAG
           git push origin $NEW_TAG
