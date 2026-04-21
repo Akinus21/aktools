@@ -76,8 +76,8 @@ jobs:
           name: ${{ steps.bump_version.outputs.NEW_TAG }}
           artifacts: target/release/*
           artifactContentType: application/octet-stream
-          generateReleaseNotes: true
-          allowAlreadyExists: true
+          allowUpdates: true
+          skipIfReleaseExists: true
 
       - name: Update Homebrew tap
         if: success() && github.event_name != 'pull_request'
