@@ -57,12 +57,20 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00")
           echo "Last tag: $LAST_TAG"
           IFS='.' read -r major minor <<< "${LAST_TAG#v}"
-          NEW_MINOR=$((minor + 1))
+          NEW_MINOR=$(printf "%02d" $((10#$minor + 1)))
           NEW_TAG="v${major}.${NEW_MINOR}"
           echo "New tag: $NEW_TAG"
-          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
-          git tag $NEW_TAG
-          git push origin $NEW_TAG
+          
+          # Check if tag already exists
+          if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
+            echo "Tag $NEW_TAG already exists, using existing tag"
+            NEW_TAG=$(git describe --tags --abbrev=0)
+            echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
+          else
+            echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
+            git tag $NEW_TAG
+            git push origin $NEW_TAG
+          fi
 
       - name: Create Release
         if: success() && github.event_name != 'pull_request'
