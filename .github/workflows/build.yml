@@ -56,16 +56,17 @@ jobs:
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00")
           echo "Last tag: $LAST_TAG"
           IFS='.' read -r major minor <<< "${LAST_TAG#v}"
-          NEW_MINOR=$(printf "%02d" $((10#$minor + 1)))
-          NEW_TAG="v${major}.${NEW_MINOR}"
+
+          # Keep incrementing until we find an unused tag
+          while git rev-parse "$major.$minor" >/dev/null 2>&1; do
+            minor=$((10#$minor + 1))
+            minor=$(printf "%02d" $minor)
+          done
+          NEW_TAG="v${major}.${minor}"
           echo "New tag: $NEW_TAG"
 
-          if git rev-parse "$NEW_TAG" >/dev/null 2>&1; then
-            echo "Tag $NEW_TAG already exists"
-          else
-            git tag $NEW_TAG
-            git push origin $NEW_TAG
-          fi
+          git tag $NEW_TAG
+          git push origin $NEW_TAG
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
 
       - name: Create Release
@@ -88,10 +89,10 @@ jobs:
           TAG="${{ steps.bump_version.outputs.NEW_TAG }}"
           VERSION="${TAG#v}"
 
-          DOWNLOAD_URL="https://github.com/Akinus21/aktools/releases/download/${TAG}/aktools-${VERSION}-linux-x86_64.tar.gz"
+          DOWNLOAD_URL="https://github.com/Akinus21/aktools/releases/download/${TAG}/aktools-${VERSION}-linux-x86_64"
 
-          curl -sL "$DOWNLOAD_URL" -o /tmp/aktools.tar.gz
-          SHA=$(sha256sum /tmp/aktools.tar.gz | cut -d' ' -f1)
+          curl -sL "$DOWNLOAD_URL" -o /tmp/aktools
+          SHA=$(sha256sum /tmp/aktools | cut -d' ' -f1)
           echo "SHA256: $SHA"
 
           git clone "https://github.com/${HOMEBREW_TAP_REPO}.git" /tmp/homebrew-tap
