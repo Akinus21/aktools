@@ -53,11 +53,11 @@ impl Registry {
         self.modules.remove(name)
     }
 
-    pub fn get_module(&self, name: &str) -> Option<&Module> {
+    pub fn _get_module(&self, name: &str) -> Option<&Module> {
         self.modules.get(name)
     }
 
-    pub fn module_names(&self) -> Vec<&String> {
+    pub fn _module_names(&self) -> Vec<&String> {
         let mut names: Vec<_> = self.modules.keys().collect();
         names.sort();
         names
@@ -84,8 +84,8 @@ mod tests {
             commands: HashMap::new(),
         };
         reg.add_module(module);
-        assert!(reg.get_module("test").is_some());
+        assert!(reg._get_module("test").is_some());
         reg.remove_module("test");
-        assert!(reg.get_module("test").is_none());
+        assert!(reg._get_module("test").is_none());
     }
 }
