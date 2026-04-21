@@ -1,0 +1,9 @@
+[package]
+name = "aktools"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "aktools"
+path = "src/main.rs"
+
