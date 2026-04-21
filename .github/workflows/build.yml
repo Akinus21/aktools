@@ -48,23 +48,29 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
-      - name: Bump version
+- name: Bump version
         id: bump_version
         if: success() && github.event_name != 'pull_request'
         run: |
           git fetch --tags
+          
+          find_next_tag() {
+            local last_tag="$1"
+            IFS='.' read -r major minor <<< "${last_tag#v}"
+            local new_minor=$(printf "%02d" $((10#$minor + 1)))
+            echo "v${major}.${new_minor}"
+          }
+          
           LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00")
           echo "Last tag: $LAST_TAG"
-          IFS='.' read -r major minor <<< "${LAST_TAG#v}"
-
-          # Keep incrementing until we find an unused tag
-          while git rev-parse "$major.$minor" >/dev/null 2>&1; do
-            minor=$((10#$minor + 1))
-            minor=$(printf "%02d" $minor)
+          
+          NEW_TAG=$(find_next_tag "$LAST_TAG")
+          while git rev-parse "$NEW_TAG" >/dev/null 2>&1; do
+            echo "Tag $NEW_TAG exists, finding next..."
+            NEW_TAG=$(find_next_tag "$NEW_TAG")
           done
-          NEW_TAG="v${major}.${minor}"
+          
           echo "New tag: $NEW_TAG"
-
           git tag $NEW_TAG
           git push origin $NEW_TAG
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_OUTPUT
@@ -109,7 +115,7 @@ jobs:
           git push https://x-access-token:$GH_TOKEN@github.com/${HOMEBREW_TAP_REPO}.git master
 
       - name: Notify webhook on failure
-        if: failure() && github.ref == 'refs/heads/main'
+        if: failure()
         env:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_HMAC_SECRET }}
         run: |
@@ -129,12 +135,14 @@ jobs:
 
           SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print "sha256="$2}')
 
+          echo "Sending failure webhook..."
+          echo "Payload: $PAYLOAD"
           curl -fsSL -X POST \
             -H "Content-Type: application/json" \
             -H "X-GitHub-Event: build_failure" \
             -H "X-Hub-Signature-256: $SIG" \
             -d "$PAYLOAD" \
-            "https://webhook.akinus21.com/webhook/aktools-build" || true
+            "https://webhook.akinus21.com/webhook/aktools-build" || echo "Webhook failed but continuing"
 
       - name: Notify webhook on success
         if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
