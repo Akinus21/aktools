@@ -7,6 +7,23 @@ mod registry;
 
 use commands::{add, edit, rm, update, doctor, help_cmd::help};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+const REPO: &str = "Akinus21/aktools";
+
+fn check_for_updates() {
+    if let Ok(response) = ureq::get(&format!("https://api.github.com/repos/{}/releases/latest", REPO))
+        .set("Accept", "application/vnd.github.v3+json")
+        .call()
+    {
+        if let Some(tag) = response.get("tag_name").and_then(|t| t.as_str()) {
+            let latest = tag.trim_start_matches('v');
+            if latest != VERSION {
+                println!("Update available: v{} -> v{}", VERSION, latest);
+            }
+        }
+    }
+}
+
 #[derive(Parser, Debug)]
 #[command(name = "aktools")]
 #[command(about = "AKTools - Modular CLI tool runner", long_about = None)]
@@ -70,6 +87,7 @@ fn main() {
         Some(Command::Doctor) => doctor::execute(&config_dir, &modules_dir),
         Some(Command::Help) => help(),
         None => {
+            check_for_updates();
             println!("AKTools - Modular CLI tool runner");
             println!("Run 'aktools help' for usage information");
             0
