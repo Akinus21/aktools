@@ -51,7 +51,7 @@ impl ModuleManager {
             } else if line.starts_with("<option") {
                 current_option = Some(OptionSwitch {
                     flags: Vec::new(),
-                    is_default: line.contains('*'),
+                    _is_default: line.contains('*'),
                     commands: Vec::new(),
                 });
             } else if line.starts_with("</option>") {

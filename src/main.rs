@@ -5,7 +5,7 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, edit, rm, update, doctor, help_cmd::help};
+use commands::{add, edit, rm, update, doctor, help_cmd::help, upgrade};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const REPO: &str = "Akinus21/aktools";
@@ -56,6 +56,7 @@ enum Command {
     Update,
     Doctor,
     Help,
+    Upgrade,
 }
 
 fn get_config_dir() -> PathBuf {
@@ -91,6 +92,7 @@ fn main() {
         Some(Command::Update) => update::execute(&modules_dir, &registry_path),
         Some(Command::Doctor) => doctor::execute(&config_dir, &modules_dir),
         Some(Command::Help) => help(),
+        Some(Command::Upgrade) => upgrade::execute(),
         None => {
             check_for_updates();
             println!("AKTools - Modular CLI tool runner");
