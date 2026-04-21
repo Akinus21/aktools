@@ -108,7 +108,8 @@ impl ModuleManager {
 
         let file_name = source_file.file_name()
             .unwrap_or_default()
-            .to_string_lossy();
+            .to_string_lossy()
+            .into_owned();
         let dest_file = module_dir.join(&file_name);
         fs::copy(source_file, &dest_file)?;
 

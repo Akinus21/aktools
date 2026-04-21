@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::Path;
 use crate::modules::ModuleManager;
 use crate::registry::Registry;

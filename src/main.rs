@@ -5,7 +5,7 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, edit, rm, update, doctor, help};
+use commands::{add, edit, rm, update, doctor, help::help};
 
 #[derive(Parser, Debug)]
 #[command(name = "aktools")]
@@ -68,7 +68,7 @@ fn main() {
         Some(Command::Rm { module_name }) => rm::execute(&modules_dir, &registry_path, module_name),
         Some(Command::Update) => update::execute(&modules_dir, &registry_path),
         Some(Command::Doctor) => doctor::execute(&config_dir, &modules_dir),
-        Some(Command::Help) => help(),
+        Some(Command::Help) => help::help(),
         None => {
             println!("AKTools - Modular CLI tool runner");
             println!("Run 'aktools help' for usage information");

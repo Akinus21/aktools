@@ -1,6 +1,6 @@
+use std::io::Write;
 use std::path::Path;
 use crate::modules::ModuleManager;
-use crate::registry::Registry;
 
 pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: Option<String>) -> i32 {
     let modules = match ModuleManager::scan_modules(modules_dir) {

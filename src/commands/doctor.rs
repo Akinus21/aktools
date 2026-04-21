@@ -1,5 +1,4 @@
 use std::path::Path;
-use std::process::Command;
 
 pub fn execute(config_dir: &Path, modules_dir: &Path) -> i32 {
     println!("AKTools Doctor - Diagnosing issues...\n");
