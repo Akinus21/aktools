@@ -5,7 +5,7 @@ use std::path::Path;
 #[derive(Debug, Clone)]
 pub struct OptionSwitch {
     pub flags: Vec<String>,
-    pub is_default: bool,
+    pub _is_default: bool,
     pub commands: Vec<String>,
 }
 
