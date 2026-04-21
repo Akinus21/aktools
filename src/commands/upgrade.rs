@@ -1,4 +1,4 @@
-use std::io;
+use std::io::copy;
 use std::path::PathBuf;
 
 const REPO: &str = "Akinus21/aktools";
@@ -77,7 +77,7 @@ pub fn execute() -> i32 {
 
     match ureq::get(&download_url).call() {
         Ok(response) => {
-            if let Err(e) = std::io::copy(&mut response.into_reader(), &mut file) {
+            if let Err(e) = copy(&mut response.into_reader(), &mut file) {
                 println!("Failed to download: {}", e);
                 return 1;
             }

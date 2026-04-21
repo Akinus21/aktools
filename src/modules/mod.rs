@@ -140,7 +140,7 @@ impl ModuleManager {
         Ok(module_dir)
     }
 
-    pub fn write_aliases_to_file(modules_dir: &Path, shell_file: &Path) -> std::io::Result<()> {
+    pub fn _write_aliases_to_file(modules_dir: &Path, shell_file: &Path) -> std::io::Result<()> {
         let modules = Self::scan_modules(modules_dir)?;
         let mut content = String::new();
 
