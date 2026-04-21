@@ -22,7 +22,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
     for (name, manifest) in modules {
         let commands: HashMap<String, Vec<String>> = manifest.options.iter()
             .map(|opt| {
-                let flag = opt.flags.get(0).cloned().unwrap_or_default();
+                let flag = opt.flags.get(0).cloned().unwrap_or_default().trim_start_matches('*').to_string();
                 (flag, opt.commands.clone())
             })
             .collect();

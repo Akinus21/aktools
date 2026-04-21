@@ -1,4 +1,4 @@
-pub fn execute() -> i32 {
+pub fn help() -> i32 {
     println!(r#"AKTools - Modular CLI Tool Runner
 
 USAGE:

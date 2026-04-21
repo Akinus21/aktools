@@ -72,7 +72,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, filename: Option<String
                     folder: name.clone(),
                     aliases: manifest.aliases.clone(),
                     commands: manifest.options.iter().map(|opt| {
-                        (opt.flags.get(0).cloned().unwrap_or_default(), opt.commands.clone())
+                        (opt.flags.get(0).cloned().unwrap_or_default().trim_start_matches('*').to_string(), opt.commands.clone())
                     }).collect(),
                 };
                 registry.add_module(module);

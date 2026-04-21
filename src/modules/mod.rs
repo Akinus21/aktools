@@ -151,13 +151,8 @@ impl ModuleManager {
                 for opt in &manifest.options {
                     for flag in &opt.flags {
                         let clean_flag = flag.trim_start_matches('*');
-                        let is_default = flag.starts_with('*');
                         content.push_str(&format!("alias {}='aktools run {} {}'\n", 
                             alias, manifest.name, clean_flag));
-                        if is_default {
-                            content.push_str(&format!("alias {}='aktools run {} {}'\n", 
-                                alias, manifest.name, clean_flag));
-                        }
                     }
                 }
             }
