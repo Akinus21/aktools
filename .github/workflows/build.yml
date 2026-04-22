@@ -109,7 +109,6 @@ jobs:
           gh release create "$NEW_TAG" \
             --title "$NEW_TAG" \
             --notes "" \
-            --fail-on-upload-error \
             "$BINARY#aktools"
 
           ASSET_COUNT=$(gh release view "$NEW_TAG" --json assets --jq '.assets | length')
