@@ -14,6 +14,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
+          fetch-depth: 0
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -21,7 +24,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libxkbcommon-dev libwayland-dev pkg-config
+          sudo apt-get install -y libgtk-3-dev libxkbcommon-dev libwayland-dev pkg-config jq
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -44,108 +47,39 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: aktools-build
-          path: target/release/
-          if-no-files-found: ignore
+          path: target/release/aktools
+          if-no-files-found: error
           retention-days: 30
 
-      - name: Create incremented release
-        if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.email "aktags-bot@akinus21.com"
-          git config --global user.name "AkTags Bot"
-
-          git fetch --tags
-
-          find_next_tag() {
-            local last_tag="$1"
-            MAJOR=$(echo "$last_tag" | sed 's/v//' | cut -d. -f1)
-            MINOR=$(echo "$last_tag" | sed 's/v//' | cut -d. -f2)
-            PATCH=$(echo "$last_tag" | sed 's/v//' | cut -d. -f3)
-            PATCH=$((PATCH + 1))
-            echo "v${MAJOR}.${MINOR}.${PATCH}"
-          }
-
-          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00.0")
-          NEW_TAG=$(find_next_tag "$LAST_TAG")
-
-          while git rev-parse "$NEW_TAG" >/dev/null 2>&1; do
-            echo "Tag $NEW_TAG exists, finding next..."
-            LAST_TAG="$NEW_TAG"
-            NEW_TAG=$(find_next_tag "$NEW_TAG")
-          done
-
-          echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
-          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
-          git push origin "$NEW_TAG"
-
-      - name: Create GitHub Release
-        if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ env.NEW_TAG }}
-          name: ${{ env.NEW_TAG }}
-          artifacts: target/release/aktools
-          artifactContentType: application/octet-stream
-          allowUpdates: false
-          skipIfReleaseExists: false
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Update Homebrew tap
-        if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        env:
-          HOMEBREW_TAP_REPO: Akinus21/homebrew-tap
-          TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-        run: |
-          TAG="${{ env.NEW_TAG }}"
-          VERSION="${TAG#v}"
-
-          SHA=$(sha256sum target/release/aktools | cut -d' ' -f1)
-          echo "SHA256: $SHA"
-
-          git clone "https://x-access-token:${TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" /tmp/homebrew-tap
-          cd /tmp/homebrew-tap
-
-          sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/aktools.rb
-          sed -i 's|url "https://github.com/Akinus21/aktools/releases/download/[^"]*"|url "https://github.com/Akinus21/aktools/releases/download/'"${TAG}"'/aktools"|' Formula/aktools.rb
-          sed -i "s|sha256 \".*\"|sha256 \"${SHA}\"|" Formula/aktools.rb
-
-          git config user.email "aktags-bot@akinus21.com"
-          git config user.name "AkTags Bot"
-          git add -A
-          git commit -m "Update aktools to ${TAG}"
-          git push https://x-access-token:$TAP_TOKEN@github.com/${HOMEBREW_TAP_REPO}.git master
-
       - name: Notify webhook on failure
-        if: failure()
+        if: failure() && github.ref == 'refs/heads/main'
         env:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_HMAC_SECRET }}
         run: |
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          BUILD_SHA="${{ github.sha }}"
-          COMMIT_MSG=$(git log -1 --pretty=format:"%s" "$BUILD_SHA" 2>/dev/null || echo "unknown")
-          ERRORS=$(cat build.log 2>/dev/null | tail -200 | jq -Rs . || echo 'build log not found')
+          SHA="${{ github.sha }}"
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s" "$SHA" 2>/dev/null || echo "unknown")
+          ERRORS=$(cat build.log 2>/dev/null | tail -200 | jq -Rs . || echo '"build log not found"')
 
           PAYLOAD=$(jq -cn \
             --arg run_url "$RUN_URL" \
-            --arg sha "$BUILD_SHA" \
+            --arg sha "$SHA" \
             --arg commit_msg "$COMMIT_MSG" \
             --arg ref "${{ github.ref_name }}" \
             --arg actor "${{ github.actor }}" \
-            --arg errors "$ERRORS" \
-            '{run_url: $run_url, sha: $sha, commit_msg: $commit_msg, ref: $ref, actor: $actor, errors: $errors}')
+            --argjson errors "$ERRORS" \
+            '{run_url:$run_url,sha:$sha,commit_msg:$commit_msg,ref:$ref,actor:$actor,errors:$errors}')
 
-          SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print "sha256="$2}')
+          SIG=$(printf '%s' "$PAYLOAD" | \
+            openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | \
+            awk '{print "sha256="$2}')
 
-          echo "Sending failure webhook..."
-          echo "Payload: $PAYLOAD"
           curl -fsSL -X POST \
             -H "Content-Type: application/json" \
             -H "X-GitHub-Event: build_failure" \
             -H "X-Hub-Signature-256: $SIG" \
             -d "$PAYLOAD" \
-            "https://webhook.akinus21.com/webhook/aktools-build" || echo "Webhook failed but continuing"
+            "https://webhook.akinus21.com/webhook/aktools-build" || true
 
       - name: Notify webhook on success
         if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
@@ -153,18 +87,20 @@ jobs:
           WEBHOOK_SECRET: ${{ secrets.WEBHOOK_HMAC_SECRET }}
         run: |
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          BUILD_SHA="${{ github.sha }}"
-          COMMIT_MSG=$(git log -1 --pretty=format:"%s" "$BUILD_SHA" 2>/dev/null || echo "unknown")
+          SHA="${{ github.sha }}"
+          COMMIT_MSG=$(git log -1 --pretty=format:"%s" "$SHA" 2>/dev/null || echo "unknown")
 
           PAYLOAD=$(jq -cn \
             --arg run_url "$RUN_URL" \
-            --arg sha "$BUILD_SHA" \
+            --arg sha "$SHA" \
             --arg commit_msg "$COMMIT_MSG" \
             --arg ref "${{ github.ref_name }}" \
             --arg actor "${{ github.actor }}" \
-            '{event: "build_success", run_url: $run_url, sha: $sha, commit_msg: $commit_msg, ref: $ref, actor: $actor}')
+            '{event:"build_success",run_url:$run_url,sha:$sha,commit_msg:$commit_msg,ref:$ref,actor:$actor}')
 
-          SIG=$(printf '%s' "$PAYLOAD" | openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | awk '{print "sha256="$2}')
+          SIG=$(printf '%s' "$PAYLOAD" | \
+            openssl dgst -sha256 -hmac "$WEBHOOK_SECRET" | \
+            awk '{print "sha256="$2}')
 
           curl -fsSL -X POST \
             -H "Content-Type: application/json" \
@@ -172,3 +108,79 @@ jobs:
             -H "X-Hub-Signature-256: $SIG" \
             -d "$PAYLOAD" \
             "https://webhook.akinus21.com/webhook/aktools-build" || true
+
+      - name: Compute new tag
+        if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        id: tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00.0")
+          VERSION=$(echo "$PREV_TAG" | sed 's/^v//')
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+          PATCH=$((10#$PATCH + 1))
+          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+      - name: Tag and create GitHub release with binary
+        if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.new_tag }}"
+          BINARY="target/release/aktools"
+
+          if [ ! -s "$BINARY" ]; then
+            echo "ERROR: Binary missing or empty at $BINARY"
+            exit 1
+          fi
+
+          SHA256=$(sha256sum "$BINARY" | awk '{print $1}')
+          echo "Binary size: $(stat -c%s "$BINARY") bytes"
+          echo "SHA256: $SHA256"
+
+          git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
+          git push origin "$NEW_TAG"
+
+          gh release create "$NEW_TAG" \
+            --title "$NEW_TAG" \
+            --notes "" \
+            "$BINARY#aktools"
+
+          echo "sha256=$SHA256" >> $GITHUB_OUTPUT
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+        id: release
+
+      - name: Update homebrew tap
+        if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        env:
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.new_tag }}"
+          SHA256="${{ steps.release.outputs.sha256 }}"
+          BINARY_URL="https://github.com/Akinus21/aktools/releases/download/${NEW_TAG}/aktools"
+
+          git clone https://x-access-token:${TAP_TOKEN}@github.com/Akinus21/homebrew-tap.git /tmp/homebrew-tap
+          cd /tmp/homebrew-tap
+
+          cat > Formula/aktools.rb <<EOF
+          class Aktools < Formula
+            desc "Modular CLI tool runner with module registry"
+            homepage "https://github.com/Akinus21/aktools"
+            version "${NEW_TAG#v}"
+            url "${BINARY_URL}"
+            sha256 "${SHA256}"
+            def install
+              bin.install "aktools"
+            end
+            test do
+              system bin/"aktools", "--version"
+            end
+          end
+          EOF
+
+          git config user.email "github-actions@github.com"
+          git config user.name "github-actions"
+          git add Formula/aktools.rb
+          git commit -m "Update aktools to ${NEW_TAG}"
+          git push
