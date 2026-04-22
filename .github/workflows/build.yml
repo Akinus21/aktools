@@ -161,7 +161,6 @@ jobs:
           gh release create "$NEW_TAG" \
             --title "$NEW_TAG" \
             --notes "" \
-            --fail-on-upload-error \
             "$BINARY#aktools"
 
           gh release view "$NEW_TAG" --json assets --jq '.assets[].name'
