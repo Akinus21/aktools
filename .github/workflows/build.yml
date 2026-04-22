@@ -81,25 +81,34 @@ jobs:
         with:
           tag: ${{ steps.bump_version.outputs.NEW_TAG }}
           name: ${{ steps.bump_version.outputs.NEW_TAG }}
-          artifacts: target/release/*
-          artifactContentType: application/octet-stream
           allowUpdates: true
           skipIfReleaseExists: true
 
-      - name: Update Homebrew tap
+      - name: Upload to Release
         if: success() && github.event_name != 'pull_request'
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HOMEBREW_TAP_REPO: Akinus21/homebrew-tap
           TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
           TAG="${{ steps.bump_version.outputs.NEW_TAG }}"
           VERSION="${TAG#v}"
 
-          DOWNLOAD_URL="https://github.com/Akinus21/aktools/releases/download/${TAG}/aktools"
+          ASSET_PATH="target/release/aktools"
+          ASSET_NAME="aktools"
 
-          curl -sL "$DOWNLOAD_URL" -o /tmp/aktools
+          curl -sL "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$TAG/$ASSET_NAME" -o /tmp/aktools
           SHA=$(sha256sum /tmp/aktools | cut -d' ' -f1)
           echo "SHA256: $SHA"
+
+          RELEASE_ID=$(curl -sL -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases" | jq -r '.[0].id')
+
+          curl -sL -X POST \
+            -H "Authorization: token $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "Content-Type: application/octet-stream" \
+            --data-binary @"$ASSET_PATH" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=$ASSET_NAME" | jq .
 
           git clone "https://x-access-token:${TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" /tmp/homebrew-tap
           cd /tmp/homebrew-tap
