@@ -53,6 +53,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          git config --global user.email "aktags-bot@akinus21.com"
+          git config --global user.name "AkTags Bot"
+
           PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00")
           MAJOR=$(echo "$PREV_TAG" | sed 's/v//' | cut -d. -f1)
           MINOR=$(echo "$PREV_TAG" | sed 's/v//' | cut -d. -f2)
