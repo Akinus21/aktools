@@ -33,7 +33,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('src/**') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ${{ runner.os }}-cargo-
 
       - name: Build
         id: build
@@ -41,6 +44,15 @@ jobs:
           set -o pipefail
           cargo build --release 2>&1 | tee build.log
         shell: bash
+
+      - name: Verify binary
+        run: |
+          SIZE=$(stat -c%s target/release/aktools)
+          echo "Binary size: $SIZE bytes"
+          if [ "$SIZE" -lt 100000 ]; then
+            echo "ERROR: Binary too small ($SIZE bytes), likely a cache or build issue"
+            exit 1
+          fi
 
       - name: Upload artifact
         if: success()
@@ -124,12 +136,10 @@ jobs:
 
       - name: Tag and create GitHub release with binary
         if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config --global user.email "aktags-bot@akinus21.com"
-          git config --global user.name "AkTags Bot"
-
           NEW_TAG="${{ steps.tag.outputs.new_tag }}"
           BINARY="target/release/aktools"
 
@@ -152,16 +162,12 @@ jobs:
 
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-        id: release
 
       - name: Update homebrew tap
         if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         env:
           TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
         run: |
-          git config --global user.email "aktags-bot@akinus21.com"
-          git config --global user.name "AkTags Bot"
-
           NEW_TAG="${{ steps.tag.outputs.new_tag }}"
           SHA256="${{ steps.release.outputs.sha256 }}"
           BINARY_URL="https://github.com/Akinus21/aktools/releases/download/${NEW_TAG}/aktools"
@@ -185,6 +191,8 @@ jobs:
           end
           EOF
 
+          git config user.email "github-actions@github.com"
+          git config user.name "github-actions"
           git add Formula/aktools.rb
           git commit -m "Update aktools to ${NEW_TAG}"
           git push
