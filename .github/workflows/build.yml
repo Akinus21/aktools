@@ -105,7 +105,7 @@ jobs:
           cd /tmp/homebrew-tap
 
           sed -i "s/version \".*\"/version \"${VERSION}\"/" Formula/aktools.rb
-          sed -i "s|https://github.com/Akinus21/aktools/releases/download/.*/aktools-[^ ]*|https://github.com/Akinus21/aktools/releases/download/${TAG}/aktools|" Formula/aktools.rb
+          sed -i 's|url "https://github.com/Akinus21/aktools/releases/download/[^"]*"|url "https://github.com/Akinus21/aktools/releases/download/'"${TAG}"'/aktools"|' Formula/aktools.rb
           sed -i "s|sha256 \".*\"|sha256 \"${SHA}\"|" Formula/aktools.rb
 
           git config user.email "aktags-bot@akinus21.com"
