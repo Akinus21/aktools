@@ -80,7 +80,7 @@ jobs:
         if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         id: release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
         run: |
           git config --global user.email "aktags-bot@akinus21.com"
           git config --global user.name "AkTags Bot"
@@ -94,8 +94,14 @@ jobs:
           fi
 
           SHA256=$(sha256sum "$BINARY" | awk '{print $1}')
-          echo "Binary size: $(stat -c%s "$BINARY") bytes"
+          SIZE=$(stat -c%s "$BINARY")
+          echo "Binary size: $SIZE bytes"
           echo "SHA256: $SHA256"
+
+          if [ "$SIZE" -lt 100000 ]; then
+            echo "ERROR: Binary too small"
+            exit 1
+          fi
 
           git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
           git push origin "$NEW_TAG"
@@ -103,9 +109,15 @@ jobs:
           gh release create "$NEW_TAG" \
             --title "$NEW_TAG" \
             --notes "" \
+            --fail-on-upload-error \
             "$BINARY#aktools"
 
-          gh release view "$NEW_TAG" --json assets --jq '.assets[].name'
+          ASSET_COUNT=$(gh release view "$NEW_TAG" --json assets --jq '.assets | length')
+          echo "Assets uploaded: $ASSET_COUNT"
+          if [ "$ASSET_COUNT" -lt 1 ]; then
+            echo "ERROR: No assets found on release after upload"
+            exit 1
+          fi
 
           echo "sha256=$SHA256" >> $GITHUB_OUTPUT
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
