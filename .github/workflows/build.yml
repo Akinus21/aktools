@@ -82,14 +82,15 @@ jobs:
 
       - name: Create GitHub Release
         if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ env.NEW_TAG }}
+          tag: ${{ env.NEW_TAG }}
           name: ${{ env.NEW_TAG }}
-          files: target/release/aktools
-          generate_release_notes: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: target/release/aktools
+          artifactContentType: application/octet-stream
+          allowUpdates: false
+          skipIfReleaseExists: false
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update Homebrew tap
         if: success() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
