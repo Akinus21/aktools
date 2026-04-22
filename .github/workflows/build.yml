@@ -101,8 +101,7 @@ jobs:
           TAG="${{ env.NEW_TAG }}"
           VERSION="${TAG#v}"
 
-          curl -sL "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$TAG/aktools" -o /tmp/aktools
-          SHA=$(sha256sum /tmp/aktools | cut -d' ' -f1)
+          SHA=$(sha256sum target/release/aktools | cut -d' ' -f1)
           echo "SHA256: $SHA"
 
           git clone "https://x-access-token:${TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" /tmp/homebrew-tap
