@@ -94,11 +94,7 @@ jobs:
           TAG="${{ steps.bump_version.outputs.NEW_TAG }}"
           VERSION="${TAG#v}"
 
-          ASSET_PATH="target/release/aktools"
-          ASSET_NAME="aktools"
-
-          curl -sL "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/releases/download/$TAG/$ASSET_NAME" -o /tmp/aktools
-          SHA=$(sha256sum /tmp/aktools | cut -d' ' -f1)
+          SHA=$(sha256sum target/release/aktools | cut -d' ' -f1)
           echo "SHA256: $SHA"
 
           RELEASE_ID=$(curl -sL -H "Authorization: token $GH_TOKEN" -H "Accept: application/vnd.github+json" "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases" | jq -r '.[0].id')
@@ -107,8 +103,8 @@ jobs:
             -H "Authorization: token $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
             -H "Content-Type: application/octet-stream" \
-            --data-binary @"$ASSET_PATH" \
-            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=$ASSET_NAME" | jq .
+            --data-binary @"target/release/aktools" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID/assets?name=aktools" | jq .
 
           git clone "https://x-access-token:${TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPO}.git" /tmp/homebrew-tap
           cd /tmp/homebrew-tap
