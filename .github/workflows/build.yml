@@ -56,12 +56,26 @@ jobs:
           git config --global user.email "aktags-bot@akinus21.com"
           git config --global user.name "AkTags Bot"
 
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00")
-          MAJOR=$(echo "$PREV_TAG" | sed 's/v//' | cut -d. -f1)
-          MINOR=$(echo "$PREV_TAG" | sed 's/v//' | cut -d. -f2)
-          PATCH=$(echo "$PREV_TAG" | sed 's/v//' | cut -d. -f3)
-          PATCH=$((PATCH + 1))
-          NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          git fetch --tags
+
+          find_next_tag() {
+            local last_tag="$1"
+            MAJOR=$(echo "$last_tag" | sed 's/v//' | cut -d. -f1)
+            MINOR=$(echo "$last_tag" | sed 's/v//' | cut -d. -f2)
+            PATCH=$(echo "$last_tag" | sed 's/v//' | cut -d. -f3)
+            PATCH=$((PATCH + 1))
+            echo "v${MAJOR}.${MINOR}.${PATCH}"
+          }
+
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00.0")
+          NEW_TAG=$(find_next_tag "$LAST_TAG")
+
+          while git rev-parse "$NEW_TAG" >/dev/null 2>&1; do
+            echo "Tag $NEW_TAG exists, finding next..."
+            LAST_TAG="$NEW_TAG"
+            NEW_TAG=$(find_next_tag "$NEW_TAG")
+          done
+
           echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
           git tag -a "$NEW_TAG" -m "Release $NEW_TAG"
           git push origin "$NEW_TAG"
