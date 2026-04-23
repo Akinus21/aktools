@@ -3,7 +3,7 @@ use std::path::Path;
 use crate::modules::ModuleManager;
 use crate::registry::Registry;
 
-pub fn execute(modules_dir: &Path, registry_path: &Path, filename: Option<String>) -> i32 {
+pub fn execute(config_dir: &Path, modules_dir: &Path, registry_path: &Path, filename: Option<String>) -> i32 {
     let filename = match filename {
         Some(f) => f,
         None => {
@@ -81,6 +81,12 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, filename: Option<String
                     println!("Warning: failed to save registry: {}", e);
                 }
             }
+
+            let aliases_file = config_dir.join("aliases.sh");
+            if let Err(e) = ModuleManager::_write_aliases_to_file(modules_dir, &aliases_file) {
+                println!("Warning: failed to write aliases: {}", e);
+            }
+
             0
         }
         Err(e) => {

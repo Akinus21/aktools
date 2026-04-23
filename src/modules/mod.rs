@@ -146,11 +146,17 @@ impl ModuleManager {
         content.push_str("# Do not edit manually\n\n");
 
         for (_, manifest) in &modules {
+            if !manifest.executable.is_empty() && manifest.aliases.len() > 1 {
+                continue;
+            }
             for alias in &manifest.aliases {
-                for opt in &manifest.options {
-                    for flag in &opt.flags {
+                if !manifest.executable.is_empty() {
+                    content.push_str(&format!("alias {}='aktools run {}'\n",
+                        alias, manifest.name));
+                } else if let Some(opt) = manifest.options.first() {
+                    if let Some(flag) = opt.flags.first() {
                         let clean_flag = flag.trim_start_matches('*');
-                        content.push_str(&format!("alias {}='aktools run {} {}'\n", 
+                        content.push_str(&format!("alias {}='aktools run {} {}'\n",
                             alias, manifest.name, clean_flag));
                     }
                 }

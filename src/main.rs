@@ -54,7 +54,7 @@ fn main() {
     }
 
     let exit_code = match args.command.as_deref() {
-        Some("add") => add::execute(&modules_dir, &registry_path, args.args.first().cloned()),
+        Some("add") => add::execute(&config_dir, &modules_dir, &registry_path, args.args.first().cloned()),
         Some("edit") => edit::execute(&modules_dir, &registry_path, args.args.first().cloned()),
         Some("build-command") => build_command::execute(&modules_dir, &registry_path),
         Some("rm") => rm::execute(&modules_dir, &registry_path, args.args.first().cloned()),
