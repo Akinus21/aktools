@@ -7,44 +7,15 @@ mod registry;
 
 use commands::{add, edit, list, rm, update, doctor, run};
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
-const REPO: &str = "Akinus21/aktools";
-
 #[derive(Parser, Debug)]
 #[command(name = "aktools", about = "Modular CLI tool runner")]
 struct Args {
-    #[command(subcommand)]
-    command: Option<Command>,
     #[arg(short, long, help = "Print debug info")]
     debug: bool,
-}
-
-#[derive(Debug, Clone, Subcommand)]
-enum Command {
-    Add {
-        #[arg(help = "Add a script as a module")]
-        filename: Option<String>,
-    },
-    Edit {
-        #[arg(help = "Edit a module's manifest")]
-        module_name: Option<String>,
-    },
-Rm {
-        #[arg(help = "Remove a module")]
-        module_name: Option<String>,
-    },
-    Update,
-    List,
-    Doctor {
-        #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
-        no_fix: bool,
-    },
-    Run {
-        #[arg(help = "Module name to run")]
-        module: Option<String>,
-        #[arg(last = true, help = "Arguments to pass to the module")]
-        args: Vec<String>,
-    },
+    #[arg(hide = true)]
+    command: Option<String>,
+    #[arg(hide = true, allow_hyphen_values = true)]
+    args: Vec<String>,
 }
 
 fn get_config_dir() -> PathBuf {
@@ -73,14 +44,29 @@ fn main() {
         eprintln!("Registry: {:?}", registry_path);
     }
 
-    std::process::exit(match args.command {
-        Some(Command::Add { filename }) => add::execute(&modules_dir, &registry_path, filename),
-        Some(Command::Edit { module_name }) => edit::execute(&modules_dir, &registry_path, module_name),
-        Some(Command::Rm { module_name }) => rm::execute(&modules_dir, &registry_path, module_name),
-        Some(Command::Update {}) => update::execute(&modules_dir, &registry_path),
-        Some(Command::List {}) => list::execute(&modules_dir),
-        Some(Command::Doctor { no_fix }) => doctor::execute(&config_dir, &modules_dir, no_fix),
-        Some(Command::Run { module, args }) => run::execute(&modules_dir, &registry_path, module, args),
+    let exit_code = match args.command.as_deref() {
+        Some("add") => add::execute(&modules_dir, &registry_path, args.args.first().cloned()),
+        Some("edit") => edit::execute(&modules_dir, &registry_path, args.args.first().cloned()),
+        Some("rm") => rm::execute(&modules_dir, &registry_path, args.args.first().cloned()),
+        Some("update") => update::execute(&modules_dir, &registry_path),
+        Some("list") => list::execute(&modules_dir),
+        Some("doctor") => {
+            let no_fix = args.args.iter().any(|a| a == "--no-fix" || a == "--dry-run");
+            doctor::execute(&config_dir, &modules_dir, no_fix)
+        }
+        Some("help") => {
+            println!("AKTools - Modular CLI tool runner\n");
+            println!("Commands:");
+            println!("  aktools add <file>     Add a script as a module");
+            println!("  aktools edit [name]    Edit a module's manifest");
+            println!("  aktools list           List installed modules");
+            println!("  aktools rm <name>      Remove a module");
+            println!("  aktools update         Rebuild the registry");
+            println!("  aktools doctor         Diagnose and auto-fix issues");
+            println!("  aktools <module> [args...]  Run a module");
+            0
+        }
+        Some(module_name) => run::execute(&modules_dir, &registry_path, Some(module_name.to_string()), args.args),
         None => {
             println!("AKTools - Modular CLI tool runner\n");
             println!("Commands:");
@@ -89,10 +75,11 @@ fn main() {
             println!("  list     List installed modules");
             println!("  rm       Remove a module");
             println!("  update   Rebuild the registry");
-            println!("  doctor   Diagnose and auto-fix issues");
-            println!("  help     Show this help message\n");
-            println!("Run 'aktools <command> --help' for more info.");
+            println!("  doctor   Diagnose and auto-fix issues\n");
+            println!("Run 'aktools <module> [args]' to execute a module.");
             0
         }
-    });
+    };
+
+    std::process::exit(exit_code);
 }
