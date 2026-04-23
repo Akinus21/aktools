@@ -5,7 +5,7 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, edit, list, rm, update, doctor};
+use commands::{add, edit, list, rm, update, doctor, run};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const REPO: &str = "Akinus21/aktools";
@@ -38,6 +38,12 @@ Rm {
     Doctor {
         #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
         no_fix: bool,
+    },
+    Run {
+        #[arg(help = "Module name to run")]
+        module: Option<String>,
+        #[arg(last = true, help = "Arguments to pass to the module")]
+        args: Vec<String>,
     },
 }
 
@@ -74,6 +80,7 @@ fn main() {
         Some(Command::Update {}) => update::execute(&modules_dir, &registry_path),
         Some(Command::List {}) => list::execute(&modules_dir),
         Some(Command::Doctor { no_fix }) => doctor::execute(&config_dir, &modules_dir, no_fix),
+        Some(Command::Run { module, args }) => run::execute(&modules_dir, &registry_path, module, args),
         None => {
             println!("AKTools - Modular CLI tool runner\n");
             println!("Commands:");
