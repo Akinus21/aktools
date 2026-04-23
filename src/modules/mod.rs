@@ -13,6 +13,7 @@ pub struct OptionSwitch {
 pub struct ModuleManifest {
     pub name: String,
     pub aliases: Vec<String>,
+    pub executable: String,
     pub options: Vec<OptionSwitch>,
 }
 
@@ -34,6 +35,7 @@ impl ModuleManager {
     fn parse_manifest(content: &str) -> std::io::Result<ModuleManifest> {
         let mut name = String::new();
         let mut aliases = Vec::new();
+        let mut executable = String::new();
         let mut options = Vec::new();
         let mut current_option: Option<OptionSwitch> = None;
 
@@ -48,6 +50,8 @@ impl ModuleManager {
             } else if line.starts_with("<alias>") && line.ends_with("</alias>") {
                 let alias = line.trim_start_matches("<alias>").trim_end_matches("</alias>").to_string();
                 aliases.push(alias);
+            } else if line.starts_with("<executable>") && line.ends_with("</executable>") {
+                executable = line.trim_start_matches("<executable>").trim_end_matches("</executable>").to_string();
             } else if line.starts_with("<option") {
                 current_option = Some(OptionSwitch {
                     flags: Vec::new(),
@@ -74,6 +78,7 @@ impl ModuleManager {
         Ok(ModuleManifest {
             name,
             aliases,
+            executable,
             options,
         })
     }
@@ -118,9 +123,10 @@ impl ModuleManager {
 <module>
     <name>{}</name>
     <alias>{}</alias>
+    <executable>./{}</executable>
     <option>
-        <flag>*run</flag>
-        <command>./{}</command>
+        <flag></flag>
+        <command></command>
     </option>
 </module>"#,
             name,
