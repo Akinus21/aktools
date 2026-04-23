@@ -33,9 +33,9 @@ enum Command {
         #[arg(help = "Remove a module")]
         module_name: Option<String>,
     },
-    #[command(help = "Rebuild the module registry")]
+    #[arg(help = "Rebuild the module registry")]
     Update,
-    #[command(help = "List installed modules")]
+    #[arg(help = "List installed modules")]
     List,
     Doctor {
         #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
