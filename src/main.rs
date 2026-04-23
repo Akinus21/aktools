@@ -7,8 +7,10 @@ mod registry;
 
 use commands::{add, edit, list, rm, update, doctor, run};
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[derive(Parser, Debug)]
-#[command(name = "aktools", about = "Modular CLI tool runner")]
+#[command(name = "aktools", about = "Modular CLI tool runner", version = VERSION)]
 struct Args {
     #[arg(short, long, help = "Print debug info")]
     debug: bool,
