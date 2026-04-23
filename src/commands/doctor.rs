@@ -57,6 +57,7 @@ pub fn execute(config_dir: &Path, modules_dir: &Path, no_fix: bool) -> i32 {
     ];
 
     let mut aktools_in_shell = false;
+    let mut aliases_sourced = false;
     for shell_file in &shell_files {
         if shell_file.exists() {
             let content = std::fs::read_to_string(shell_file).unwrap_or_default();
@@ -64,11 +65,18 @@ pub fn execute(config_dir: &Path, modules_dir: &Path, no_fix: bool) -> i32 {
                 println!("  [OK] aktools found in {:?}", shell_file);
                 aktools_in_shell = true;
             }
+            if content.contains("aliases.sh") {
+                aliases_sourced = true;
+            }
         }
     }
 
     if !aktools_in_shell && !no_fix {
-        let export_line = format!("\n# AKTools\nexport AKTOOLS_HOME=\"{}\"\nexport PATH=\"$AKTOOLS_HOME/bin:$PATH\"\n", config_dir.display());
+        let export_line = format!(r#"# AKTools
+export AKTOOLS_HOME="{}"
+export PATH="$AKTOOLS_HOME/bin:$PATH"
+source "$AKTOOLS_HOME/aliases.sh"
+"#, config_dir.display());
         for shell_file in &shell_files {
             if shell_file.exists() {
                 match std::fs::read_to_string(shell_file) {
@@ -78,12 +86,44 @@ pub fn execute(config_dir: &Path, modules_dir: &Path, no_fix: bool) -> i32 {
                                 Ok(_) => {
                                     println!("  [FIXED] Added AKTools to {:?}", shell_file);
                                     fixed += 1;
+                                    aktools_in_shell = true;
+                                    aliases_sourced = true;
                                 }
                                 Err(e) => {
                                     println!("  [ERROR] Failed to update {:?}: {}", shell_file, e);
                                     issues_found += 1;
                                 }
                             }
+                        }
+                    }
+                    Err(e) => {
+                        println!("  [ERROR] Failed to read {:?}: {}", shell_file, e);
+                        issues_found += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    if !aliases_sourced && !no_fix && aktools_in_shell {
+        let source_line = "source \"$AKTOOLS_HOME/aliases.sh\"\n";
+        for shell_file in &shell_files {
+            if shell_file.exists() {
+                match std::fs::read_to_string(shell_file) {
+                    Ok(content) => {
+                        if content.contains("aktools") && !content.contains("aliases.sh") {
+                            let new_content = content.trim_end().to_string() + "\n" + source_line;
+                            match std::fs::write(shell_file, new_content) {
+                                Ok(_) => {
+                                    println!("  [FIXED] Added aliases sourcing to {:?}", shell_file);
+                                    fixed += 1;
+                                }
+                                Err(e) => {
+                                    println!("  [ERROR] Failed to update {:?}: {}", shell_file, e);
+                                    issues_found += 1;
+                                }
+                            }
+                            break;
                         }
                     }
                     Err(e) => {
