@@ -85,6 +85,9 @@ pub fn execute(config_dir: &Path, modules_dir: &Path, registry_path: &Path, file
             let aliases_file = config_dir.join("aliases.sh");
             if let Err(e) = ModuleManager::_write_aliases_to_file(modules_dir, &aliases_file) {
                 println!("Warning: failed to write aliases: {}", e);
+            } else {
+                println!("\nAliases have been updated. Source them with:");
+                println!("  source ~/.aktools/aliases.sh");
             }
 
             0
