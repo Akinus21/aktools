@@ -1,85 +1,59 @@
 pub fn help() -> i32 {
     println!(r#"AKTools - Modular CLI Tool Runner
 
+AKTools lets you turn any script into a modular CLI command with
+custom aliases and multiple entry points. Manage all your custom
+commands in one place.
+
 USAGE:
     aktools <command> [options]
 
 COMMANDS:
-    add <filename>     Add a file as a new module. Prompts for name, aliases.
-                      Checks for alias conflicts before creating.
-                      
-    edit [module]     Edit a module's manifest. If no module specified,
-                      shows list to choose from. Loops until 'q'.
-                      
-    rm [module]       Remove a module. If no module specified, shows
-                      list to choose from. Loops until 'q'.
-                      
-    update            Rebuild the registry.json from module folders
-                      and their manifest.xml files.
-                      
-    doctor            Diagnose and auto-fix AKTools issues:
-                      - Check module directories exist
-                      - Verify shell integration
-                      - Validate alias files
-                      - Check for updates
-                      - Verify module integrity
-                      - Auto-fixes issues by default
-                      - Use --no-fix to see issues without fixing
-                      
-    help              Show this detailed help message
+    add <filename>     Add a script as a module. Prompts for name
+                      and aliases. Supports multiple command flags.
+
+    edit [module]      Edit a module's manifest. Add flags, change
+                      aliases, modify commands. Interactive menu.
+
+    list              Show all installed modules with their aliases.
+
+    rm <module>       Remove a module and its files.
+
+    update            Rebuild registry from module folders.
+
+    doctor            Diagnose and auto-fix configuration issues.
+                      Creates directories, fixes shell integration.
+
+    help              Show this help message.
 
 MODULE STRUCTURE:
-    Modules are stored in ~/.aktools/modules/
-    Each module is a folder containing:
-    
-    - manifest.xml     Module metadata in XML format
-    - Any scripts or resources the module needs
-    
-MANIFEST.XML FORMAT:
+    Modules live in ~/.aktools/modules/
+    Each module is a folder with:
+      - manifest.xml    Module metadata
+      - Scripts and resources
+
+MANIFEST EXAMPLE:
     <?xml version="1.0"?>
     <module>
-        <name>ModuleName</name>
-        <alias>alias1</alias>
-        <alias>alias2</alias>
+        <name>MyScript</name>
+        <alias>ms</alias>
         <option>
-            <flag>*defaultflag</flag>    (* = default command)
-            <command>script to run</command>
+            <flag>*run</flag>      # * = default flag
+            <command>./run.sh</command>
         </option>
         <option>
-            <flag>otherflag</flag>
-            <command>another script</command>
+            <flag>list</flag>
+            <command>./list.sh</command>
         </option>
     </module>
 
-BUILT-IN OPTIONS:
-    add <filename>     Adds file as module. Prompts user for name, aliases.
-                      Checks aliases against current aliases, prompts on conflict.
-                      Creates module folder, copies file, creates manifest
-                      with "Star" option entry (default command).
-                      
-    edit [blank|module]  Edit module manifest. If blank, shows alphabetical
-                        list of installed modules, then runs edit guide.
-                        Loops until user chooses 'q'.
-                        
-    rm/remove [blank|module]  Delete module. If blank, shows alphabetical
-                              list. Loops until 'q'.
-                              
-    update             Recreates project registry from module folders.
-    
-    doctor             Diagnoses and auto-fixes AKTools issues:
-                      - Ensures directories and configs exist
-                      - Checks for updates
-                      - Fixes any found issues
-                      
-    help               Shows this detailed help
-
-EXAMPLES:
+QUICK START:
     aktools add myscript.sh
-    aktools edit
-    aktools rm
-    aktools update
+    aktools list
     aktools doctor
-    aktools help
+
+For more details, see the README at:
+https://github.com/Akinus21/aktools
 "#);
     0
 }

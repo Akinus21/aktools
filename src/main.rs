@@ -5,14 +5,25 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, edit, rm, update, doctor, help_cmd::help};
+use commands::{add, edit, list, rm, update, doctor, help_cmd::help};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const REPO: &str = "Akinus21/aktools";
 
 #[derive(Parser, Debug)]
 #[command(name = "aktools")]
-#[command(about = "AKTools - Modular CLI tool runner", long_about = None)]
+#[command(about = "Modular CLI tool runner", long_about = "AKTools - Turn scripts into modular CLI commands
+
+Commands:
+  add      Add a script as a module
+  edit     Edit a module's manifest
+  list     List installed modules
+  rm       Remove a module
+  update   Rebuild the registry
+  doctor   Diagnose and auto-fix issues
+  help     Show this help message
+
+Run 'aktools <command> --help' for more info on each command.")]
 struct Args {
     #[command(subcommand)]
     command: Option<Command>,
@@ -35,6 +46,7 @@ enum Command {
         module_name: Option<String>,
     },
     Update,
+    List,
     Doctor {
         #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
         no_fix: bool,
@@ -73,6 +85,7 @@ fn main() {
         Some(Command::Edit { module_name }) => edit::execute(&modules_dir, &registry_path, module_name),
         Some(Command::Rm { module_name }) => rm::execute(&modules_dir, &registry_path, module_name),
         Some(Command::Update) => update::execute(&modules_dir, &registry_path),
+        Some(Command::List) => list::execute(&modules_dir),
         Some(Command::Doctor { no_fix }) => doctor::execute(&config_dir, &modules_dir, no_fix),
         Some(Command::Help) => help(),
         None => {
