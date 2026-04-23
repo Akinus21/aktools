@@ -33,12 +33,10 @@ enum Command {
         #[arg(help = "Remove a module")]
         module_name: Option<String>,
     },
-    Update {
-        #[arg(help = "Rebuild the module registry")]
-    },
-    List {
-        #[arg(help = "List installed modules")]
-    },
+    #[command(help = "Rebuild the module registry")]
+    Update,
+    #[command(help = "List installed modules")]
+    List,
     Doctor {
         #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
         no_fix: bool,
@@ -75,8 +73,8 @@ fn main() {
         Some(Command::Add { filename }) => add::execute(&modules_dir, &registry_path, filename),
         Some(Command::Edit { module_name }) => edit::execute(&modules_dir, &registry_path, module_name),
         Some(Command::Rm { module_name }) => rm::execute(&modules_dir, &registry_path, module_name),
-        Some(Command::Update) => update::execute(&modules_dir, &registry_path),
-        Some(Command::List) => list::execute(&modules_dir),
+        Some(Command::Update {}) => update::execute(&modules_dir, &registry_path),
+        Some(Command::List {}) => list::execute(&modules_dir),
         Some(Command::Doctor { no_fix }) => doctor::execute(&config_dir, &modules_dir, no_fix),
         None => {
             println!("AKTools - Modular CLI tool runner\n");
