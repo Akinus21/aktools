@@ -160,43 +160,40 @@ alias aktools-edit='aktools edit'
         }
     } else {
         if !no_fix {
-            let update_output = std::process::Command::new("brew")
+            let _ = std::process::Command::new("brew")
                 .args(["update"])
+                .output();
+
+            let aktools_installed = std::process::Command::new("brew")
+                .args(["list", "aktools"])
                 .output()
-                .map(|o| String::from_utf8_lossy(&o.stdout).to_string())
-                .unwrap_or_default();
+                .map(|o| o.status.success())
+                .unwrap_or(false);
 
-            if update_output.trim().is_empty() {
-                println!("  [OK] Homebrew is up to date");
-            } else {
-                let aktools_installed = std::process::Command::new("brew")
-                    .args(["list", "aktools"])
-                    .output()
-                    .map(|o| o.status.success())
-                    .unwrap_or(false);
+            if aktools_installed {
+                let upgrade_result = std::process::Command::new("brew")
+                    .args(["upgrade", "aktools"])
+                    .output();
 
-                if aktools_installed {
-                    let upgrade_result = std::process::Command::new("brew")
-                        .args(["upgrade", "aktools"])
-                        .output();
-
-                    if let Ok(output) = upgrade_result {
+                match upgrade_result {
+                    Ok(output) => {
                         if output.status.success() {
                             println!("  [FIXED] aktools upgraded via Homebrew");
                             fixed += 1;
                         } else {
-                            println!("  [WARN] aktools not found in {:?}, use 'brew install aktools'", bin_dir);
+                            println!("  [WARN] upgrade failed, use 'brew upgrade aktools' manually");
                             issues_found += 1;
                         }
-                    } else {
-                        println!("  [WARN] aktools not found in {:?}, use 'brew install aktools'", bin_dir);
+                    }
+                    Err(e) => {
+                        println!("  [WARN] failed to run brew upgrade: {}", e);
                         issues_found += 1;
                     }
-                } else {
-                    println!("  [WARN] aktools not installed via Homebrew");
-                    println!("         Run 'brew install aktools' to install");
-                    issues_found += 1;
                 }
+            } else {
+                println!("  [WARN] aktools not installed via Homebrew");
+                println!("         Run 'brew install aktools' to install");
+                issues_found += 1;
             }
         } else {
             println!("  [WARN] aktools binary not found in {:?}", aktools_bin);
