@@ -17,12 +17,14 @@ COMMANDS:
     update            Rebuild the registry.json from module folders
                       and their manifest.xml files.
                       
-    doctor            Diagnose AKTools issues:
+    doctor            Diagnose and auto-fix AKTools issues:
                       - Check module directories exist
                       - Verify shell integration
                       - Validate alias files
                       - Check for updates
                       - Verify module integrity
+                      - Auto-fixes issues by default
+                      - Use --no-fix to see issues without fixing
                       
     help              Show this detailed help message
 

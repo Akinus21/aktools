@@ -54,7 +54,10 @@ enum Command {
         module_name: Option<String>,
     },
     Update,
-    Doctor,
+    Doctor {
+        #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
+        no_fix: bool,
+    },
     Help,
     Upgrade,
 }
@@ -90,7 +93,7 @@ fn main() {
         Some(Command::Edit { module_name }) => edit::execute(&modules_dir, &registry_path, module_name),
         Some(Command::Rm { module_name }) => rm::execute(&modules_dir, &registry_path, module_name),
         Some(Command::Update) => update::execute(&modules_dir, &registry_path),
-        Some(Command::Doctor) => doctor::execute(&config_dir, &modules_dir),
+        Some(Command::Doctor { no_fix }) => doctor::execute(&config_dir, &modules_dir, no_fix),
         Some(Command::Help) => help(),
         Some(Command::Upgrade) => upgrade::execute(),
         None => {
