@@ -2,7 +2,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use crate::registry::Registry;
 
-pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, mut args: Vec<String>) -> i32 {
+pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args: Vec<String>) -> i32 {
     let registry = match Registry::load(registry_path) {
         Ok(r) => r,
         Err(e) => {
@@ -34,32 +34,30 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, mut 
         }
     };
 
-    let flag = if args.is_empty() {
-        manifest.options.iter()
-            .find(|opt| opt._is_default)
-            .or(manifest.options.first())
-            .map(|_| String::new())
-    } else {
-        Some(args.remove(0))
-    };
+    let default_opt = manifest.options.iter().find(|opt| opt._is_default).or(manifest.options.first());
 
-    let flag = match flag {
-        Some(f) => f,
-        None => {
-            println!("Error: no default flag defined for module '{}'", module_name);
-            return 1;
+    let (opt, remaining_args) = if let Some(first_arg) = args.first() {
+        let matched_opt = manifest.options.iter().find(|o| o.flags.iter().any(|f| f.trim_start_matches('*') == first_arg));
+        match matched_opt {
+            Some(o) => (o, args[1..].to_vec()),
+            None => {
+                let opt = match default_opt {
+                    Some(o) => o,
+                    None => {
+                        println!("Error: no options defined for module '{}'", module_name);
+                        return 1;
+                    }
+                };
+                (opt, args.clone())
+            }
         }
-    };
-
-    let opt = manifest.options.iter()
-        .find(|o| o.flags.iter().any(|f| f.trim_start_matches('*') == flag))
-        .or(manifest.options.first());
-
-    let opt = match opt {
-        Some(o) => o,
-        None => {
-            println!("Error: flag '{}' not found in module '{}'", flag, module_name);
-            return 1;
+    } else {
+        match default_opt {
+            Some(o) => (o, vec![]),
+            None => {
+                println!("Error: no options defined for module '{}'", module_name);
+                return 1;
+            }
         }
     };
 
@@ -91,7 +89,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, mut 
         c
     };
 
-    cmd.args(&args);
+    cmd.args(&remaining_args);
     cmd.stdout(Stdio::inherit());
     cmd.stderr(Stdio::inherit());
     cmd.current_dir(&module_path);

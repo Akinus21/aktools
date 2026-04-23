@@ -113,27 +113,19 @@ impl ModuleManager {
         let dest_file = module_dir.join(&file_name);
         fs::copy(source_file, &dest_file)?;
 
-        let default_flag = if aliases.is_empty() {
-            String::new()
-        } else {
-            format!("*{}", &aliases[0][..1])
-        };
-
         let manifest = format!(
             r#"<?xml version="1.0"?>
 <module>
     <name>{}</name>
     <alias>{}</alias>
-    <option {} >
-        <flag>{}</flag>
-        <command>{}</command>
+    <option>
+        <flag>*run</flag>
+        <command>./{}</command>
     </option>
 </module>"#,
             name,
             aliases.join("</alias>\n    <alias>"),
-            if default_flag.is_empty() { String::new() } else { format!(" default=\"{}\"", &default_flag[1..]) },
-            if default_flag.is_empty() { "main" } else { &default_flag[1..] },
-            format!("./{}", file_name)
+            file_name
         );
 
         fs::write(module_dir.join("manifest.xml"), manifest)?;
