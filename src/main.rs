@@ -29,13 +29,11 @@ enum Command {
         #[arg(help = "Edit a module's manifest")]
         module_name: Option<String>,
     },
-    Rm {
+Rm {
         #[arg(help = "Remove a module")]
         module_name: Option<String>,
     },
-    #[arg(help = "Rebuild the module registry")]
     Update,
-    #[arg(help = "List installed modules")]
     List,
     Doctor {
         #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
