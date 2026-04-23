@@ -7,7 +7,7 @@ This is the Rust rewrite of AKTools - a modular CLI tool runner.
 ## Building
 
 ```bash
-cd /home/opencode/aktools-rust
+cd /home/opencode/projects/aktools
 cargo build --release
 ./target/release/aktools help
 ```
@@ -25,24 +25,39 @@ GIT_SSH_COMMAND="ssh -i /config/.ssh/github -o StrictHostKeyChecking=no" git pus
 
 **IMPORTANT: Always push to GitHub after making and verifying changes.**
 
+## Documentation Updates
+
+**IMPORTANT: Update README.md when adding new features or changing existing features.**
+
+The README should reflect:
+- New commands added
+- Changed command behavior
+- Updated installation instructions
+- New use cases or examples
+
 ## Project Structure
 
 ```
-aktools-rust/
+aktools/
 ├── Cargo.toml
+├── README.md
+├── AGENTS.md
 └── src/
     ├── main.rs          # Entry point
-    ├── registry.rs     # Module registry (JSON)
+    ├── registry.rs      # Module registry (JSON)
     ├── modules/
     │   └── mod.rs       # XML manifest parser
     └── commands/
         ├── mod.rs       # Command exports
         ├── add.rs       # Add module from file
         ├── edit.rs      # Edit module manifest
+        ├── init.rs      # Interactive module creation
+        ├── list.rs      # List modules
         ├── rm.rs        # Remove module
+        ├── run.rs       # Run a module
         ├── update.rs    # Rebuild registry
         ├── doctor.rs    # Diagnose issues
-        └── help.rs      # Help text
+        └── help_cmd.rs  # Help text
 ```
 
 ## Module Structure
@@ -50,10 +65,23 @@ aktools-rust/
 Modules are stored in `~/.aktools/modules/`:
 - Each module is a folder
 - Contains `manifest.xml` with metadata
-- May contain scripts and resources
+- May contain scripts or resources
 
-## Auto-Update (TODO)
+### manifest.xml Format
 
-- Check GitHub releases for updates
-- Download and replace binary
-- Verify HMAC signature before executing
+```xml
+<?xml version="1.0"?>
+<module>
+    <name>modulename</name>
+    <alias>alias</alias>
+    <executable>./script.sh</executable>
+    <option>
+        <flag>flagname</flag>
+        <command>command to run</command>
+    </option>
+</module>
+```
+
+- `<executable>`: Path to script (empty for command-only modules)
+- `<flag>`: Command-line flag to match
+- `<command>`: Command(s) to execute when flag is used

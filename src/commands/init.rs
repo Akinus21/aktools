@@ -60,7 +60,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
             continue;
         }
 
-        options.push((flag, command));
+        options.push((flag.clone(), command.clone()));
         println!("Added: {} -> {}", flag, command);
     }
 

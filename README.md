@@ -10,11 +10,13 @@ AKTools lets you package scripts as modules with custom aliases, multiple entry 
 - **Multiple commands per module** — Define different flags/entry points
 - **Custom aliases** — Short names for your modules
 - **Auto-fix doctor** — Diagnoses and repairs configuration issues automatically
-- **Homebrew install** — Easy installation via `brew install aktools`
+- **Interactive module creation** — Build command modules with an interactive prompt
+- **Homebrew install** — Easy installation via Homebrew
 
 ## Installation
 
 ```bash
+brew tap Akinus21/homebrew-tap
 brew install aktools
 ```
 
@@ -29,6 +31,13 @@ Then run `aktools doctor` to set everything up.
 
 ## Quick Start
 
+### Create a command module interactively
+
+```bash
+aktools init
+# Follow the prompts to create a module with custom flags and commands
+```
+
 ### Add a script as a module
 
 ```bash
@@ -39,8 +48,7 @@ aktools add myscript.sh
 ### Run a module
 
 ```bash
-aktools <module-name>
-aktools <module-name> <flag>
+aktools <module-name> [args...]
 ```
 
 ### List installed modules
@@ -62,9 +70,9 @@ Modules live in `~/.aktools/modules/`. Each module is a folder containing:
 
 ```
 ~/.aktools/modules/
-└── myscript/
+└── mymodule/
     ├── manifest.xml
-    └── run.sh
+    └── script.sh
 ```
 
 ### manifest.xml
@@ -72,28 +80,46 @@ Modules live in `~/.aktools/modules/`. Each module is a folder containing:
 ```xml
 <?xml version="1.0"?>
 <module>
-    <name>myscript</name>
-    <alias>ms</alias>
+    <name>mymodule</name>
+    <alias>mm</alias>
+    <executable>./script.sh</executable>
     <option>
-        <flag>*run</flag>
-        <command>./run.sh</command>
-    </option>
-    <option>
-        <flag>list</flag>
-        <command>./list.sh</command>
+        <flag>run</flag>
+        <command>./script.sh</command>
     </option>
 </module>
 ```
 
 - `name` — Module identifier
 - `alias` — Short command to invoke the module
-- `flag` — Prefix with `*` for the default command
-- `command` — Script to execute
+- `executable` — Path to script (empty for command-only modules)
+- `flag` — Command-line flag to match
+- `command` — Command(s) to execute
+
+### Command-Only Modules
+
+Modules can be command-only without an executable:
+
+```xml
+<?xml version="1.0"?>
+<module>
+    <name>sys</name>
+    <alias>sys</alias>
+    <executable></executable>
+    <option>
+        <flag>upgrade</flag>
+        <command>sudo bootc upgrade && reboot</command>
+    </option>
+</module>
+```
+
+Run with `aktools sys upgrade`.
 
 ## Commands
 
 | Command | Description |
 |---------|-------------|
+| `aktools init` | Create a new module interactively |
 | `aktools add <file>` | Add a script as a new module |
 | `aktools edit [name]` | Edit a module's manifest |
 | `aktools list` | List all installed modules |
