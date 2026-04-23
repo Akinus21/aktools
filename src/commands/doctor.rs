@@ -160,7 +160,7 @@ alias aktools-edit='aktools edit'
         }
     } else {
         println!("  [WARN] aktools binary not found in {:?}", aktools_bin);
-        println!("         Run 'aktools upgrade' to install");
+        println!("         Use 'brew upgrade aktools' to install");
         issues_found += 1;
     }
 

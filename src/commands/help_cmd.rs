@@ -66,9 +66,9 @@ BUILT-IN OPTIONS:
                               
     update             Recreates project registry from module folders.
     
-    doctor             Diagnoses AKTools issues:
-                      - Ensures aliases from modules are in shell source
-                      - Checks for updates, prompts to install
+    doctor             Diagnoses and auto-fixes AKTools issues:
+                      - Ensures directories and configs exist
+                      - Checks for updates
                       - Fixes any found issues
                       
     help               Shows this detailed help

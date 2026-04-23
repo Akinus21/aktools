@@ -5,29 +5,10 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, edit, rm, update, doctor, help_cmd::help, upgrade};
+use commands::{add, edit, rm, update, doctor, help_cmd::help};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const REPO: &str = "Akinus21/aktools";
-
-fn check_for_updates() {
-    let url = format!("https://api.github.com/repos/{}/releases/latest", REPO);
-    if let Ok(response) = ureq::get(&url)
-        .set("Accept", "application/vnd.github.v3+json")
-        .call()
-    {
-        if let Ok(body) = response.into_string() {
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
-                if let Some(tag) = json.get("tag_name").and_then(|t| t.as_str()) {
-                    let latest = tag.trim_start_matches('v');
-                    if latest != VERSION {
-                        println!("Update available: v{} -> v{}", VERSION, latest);
-                    }
-                }
-            }
-        }
-    }
-}
 
 #[derive(Parser, Debug)]
 #[command(name = "aktools")]
@@ -59,7 +40,6 @@ enum Command {
         no_fix: bool,
     },
     Help,
-    Upgrade,
 }
 
 fn get_config_dir() -> PathBuf {
@@ -95,9 +75,7 @@ fn main() {
         Some(Command::Update) => update::execute(&modules_dir, &registry_path),
         Some(Command::Doctor { no_fix }) => doctor::execute(&config_dir, &modules_dir, no_fix),
         Some(Command::Help) => help(),
-        Some(Command::Upgrade) => upgrade::execute(),
         None => {
-            check_for_updates();
             println!("AKTools - Modular CLI tool runner");
             println!("Run 'aktools help' for usage information");
             0
