@@ -17,11 +17,13 @@ cargo build --release
 Since gh CLI is not authenticated, use SSH directly:
 
 ```bash
-cd /home/opencode/aktools-rust
+cd /home/opencode/projects/aktools
 git add -A
 git commit -m "<description>"
-GIT_SSH_COMMAND="ssh -i /config/.ssh/github -o StrictHostKeyChecking=no" git push origin master
+GIT_SSH_COMMAND="ssh -i /config/.ssh/github -o StrictHostKeyChecking=no" git push origin main
 ```
+
+**IMPORTANT: Always push to GitHub after making and verifying changes.**
 
 ## Project Structure
 
