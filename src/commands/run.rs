@@ -74,7 +74,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
             Some(o) => o,
             None => {
                 println!("Error: no matching flag found for '{}'", args.first().unwrap_or(&"".to_string()));
-                1
+                return 1;
             }
         };
 
