@@ -5,25 +5,13 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, edit, list, rm, update, doctor, help_cmd::help};
+use commands::{add, edit, list, rm, update, doctor};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const REPO: &str = "Akinus21/aktools";
 
 #[derive(Parser, Debug)]
-#[command(name = "aktools")]
-#[command(about = "Modular CLI tool runner", long_about = "AKTools - Turn scripts into modular CLI commands
-
-Commands:
-  add      Add a script as a module
-  edit     Edit a module's manifest
-  list     List installed modules
-  rm       Remove a module
-  update   Rebuild the registry
-  doctor   Diagnose and auto-fix issues
-  help     Show this help message
-
-Run 'aktools <command> --help' for more info on each command.")]
+#[command(name = "aktools", about = "Modular CLI tool runner")]
 struct Args {
     #[command(subcommand)]
     command: Option<Command>,
@@ -34,24 +22,27 @@ struct Args {
 #[derive(Debug, Clone, Subcommand)]
 enum Command {
     Add {
-        #[arg(help = "File to add as module")]
+        #[arg(help = "Add a script as a module")]
         filename: Option<String>,
     },
     Edit {
-        #[arg(help = "Module name to edit")]
+        #[arg(help = "Edit a module's manifest")]
         module_name: Option<String>,
     },
     Rm {
-        #[arg(help = "Module name to remove")]
+        #[arg(help = "Remove a module")]
         module_name: Option<String>,
     },
-    Update,
-    List,
+    Update {
+        #[arg(help = "Rebuild the module registry")]
+    },
+    List {
+        #[arg(help = "List installed modules")]
+    },
     Doctor {
         #[arg(short, long, help = "Show issues without fixing them", alias = "dry-run")]
         no_fix: bool,
     },
-    Help,
 }
 
 fn get_config_dir() -> PathBuf {
@@ -87,10 +78,17 @@ fn main() {
         Some(Command::Update) => update::execute(&modules_dir, &registry_path),
         Some(Command::List) => list::execute(&modules_dir),
         Some(Command::Doctor { no_fix }) => doctor::execute(&config_dir, &modules_dir, no_fix),
-        Some(Command::Help) => help(),
         None => {
-            println!("AKTools - Modular CLI tool runner");
-            println!("Run 'aktools help' for usage information");
+            println!("AKTools - Modular CLI tool runner\n");
+            println!("Commands:");
+            println!("  add      Add a script as a module");
+            println!("  edit     Edit a module's manifest");
+            println!("  list     List installed modules");
+            println!("  rm       Remove a module");
+            println!("  update   Rebuild the registry");
+            println!("  doctor   Diagnose and auto-fix issues");
+            println!("  help     Show this help message\n");
+            println!("Run 'aktools <command> --help' for more info.");
             0
         }
     });
