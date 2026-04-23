@@ -79,16 +79,27 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
         };
 
         for cmd_str in &opt.commands {
-            let mut parts = cmd_str.split_whitespace();
-            let program = parts.next().unwrap_or("");
-            let mut cmd = Command::new(program);
-            cmd.args(parts);
-            cmd.stdout(Stdio::inherit());
-            cmd.stderr(Stdio::inherit());
-
-            if let Err(e) = cmd.spawn() {
-                println!("Error executing command '{}': {}", cmd_str, e);
-                return 1;
+            if cmd_str.contains("sudo ") || cmd_str.trim_start() == "sudo" {
+                let full_cmd = format!("sh -c '{}'", cmd_str.replace("'", "'\"'\"'"));
+                let mut cmd = Command::new("sudo");
+                cmd.arg("sh").arg("-c").arg(&full_cmd);
+                cmd.stdout(Stdio::inherit());
+                cmd.stderr(Stdio::inherit());
+                if let Err(e) = cmd.spawn() {
+                    println!("Error executing command '{}': {}", cmd_str, e);
+                    return 1;
+                }
+            } else {
+                let mut parts = cmd_str.split_whitespace();
+                let program = parts.next().unwrap_or("");
+                let mut cmd = Command::new(program);
+                cmd.args(parts);
+                cmd.stdout(Stdio::inherit());
+                cmd.stderr(Stdio::inherit());
+                if let Err(e) = cmd.spawn() {
+                    println!("Error executing command '{}': {}", cmd_str, e);
+                    return 1;
+                }
             }
         }
         0

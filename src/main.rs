@@ -19,6 +19,13 @@ struct Args {
 }
 
 fn get_config_dir() -> PathBuf {
+    if let Ok(sudo_user) = std::env::var("SUDO_USER") {
+        if let Ok(home) = std::env::var("HOME") {
+            if home.contains(&sudo_user) || home == format!("/var/home/{}", sudo_user) || home == format!("/home/{}", sudo_user) {
+                return PathBuf::from(&home).join(".aktools");
+            }
+        }
+    }
     dirs::home_dir()
         .unwrap_or_else(|| PathBuf::from("."))
         .join(".aktools")
