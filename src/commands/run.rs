@@ -92,7 +92,6 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
     cmd.args(&remaining_args);
     cmd.stdout(Stdio::inherit());
     cmd.stderr(Stdio::inherit());
-    cmd.current_dir(&module_path);
 
     match cmd.spawn() {
         Ok(mut child) => child.wait().map(|s| s.code().unwrap_or(1)).unwrap_or(1),
