@@ -34,7 +34,7 @@ Then run `aktools doctor` to set everything up.
 ### Create a command module interactively
 
 ```bash
-aktools init
+aktools build-command
 # Follow the prompts to create a module with custom flags and commands
 ```
 
@@ -119,7 +119,7 @@ Run with `aktools sys upgrade`.
 
 | Command | Description |
 |---------|-------------|
-| `aktools init` | Create a new module interactively |
+| `aktools build-command` | Create a new command module interactively |
 | `aktools add <file>` | Add a script as a new module |
 | `aktools edit [name]` | Edit a module's manifest |
 | `aktools list` | List all installed modules |

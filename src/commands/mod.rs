@@ -1,6 +1,6 @@
 pub mod add;
+pub mod build_command;
 pub mod edit;
-pub mod init;
 pub mod list;
 pub mod rm;
 pub mod update;

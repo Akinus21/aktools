@@ -51,7 +51,7 @@ aktools/
         ├── mod.rs       # Command exports
         ├── add.rs       # Add module from file
         ├── edit.rs      # Edit module manifest
-        ├── init.rs      # Interactive module creation
+        ├── build_command.rs  # Interactive command module creation
         ├── list.rs      # List modules
         ├── rm.rs        # Remove module
         ├── run.rs       # Run a module
