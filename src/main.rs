@@ -1,4 +1,4 @@
-use clap::{Parser, Subcommand};
+use clap::Parser;
 use std::path::PathBuf;
 
 mod commands;
@@ -66,7 +66,7 @@ fn main() {
             println!("  aktools <module> [args...]  Run a module");
             0
         }
-        Some(module_name) => run::execute(&modules_dir, &registry_path, Some(module_name.to_string()), args.args),
+        Some(module_name) => run::execute(&modules_dir, &registry_path, module_name, args.args),
         None => {
             println!("AKTools - Modular CLI tool runner\n");
             println!("Commands:");

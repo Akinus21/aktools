@@ -2,7 +2,7 @@ use std::path::Path;
 use std::process::{Command, Stdio};
 use crate::registry::Registry;
 
-pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args: Vec<String>) -> i32 {
+pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, mut args: Vec<String>) -> i32 {
     let registry = match Registry::load(registry_path) {
         Ok(r) => r,
         Err(e) => {
@@ -82,12 +82,12 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
                 c
             }
             _ => {
-                let mut c = Command::new(&program_path);
+                let c = Command::new(&program_path);
                 c
             }
         }
     } else {
-        let mut c = Command::new(program);
+        let c = Command::new(program);
         c
     };
 
