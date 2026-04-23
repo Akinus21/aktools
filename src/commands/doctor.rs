@@ -169,17 +169,19 @@ alias aktools-edit='aktools edit'
         .set("Accept", "application/vnd.github+json")
         .call()
     {
-        if let Ok(releases) = response.into_json::<serde_json::Value>() {
-            if let Some(tag_name) = releases.get("tag_name").and_then(|t| t.as_str()) {
-                let current_version = env!("CARGO_PKG_VERSION");
-                if tag_name != format!("v{}", current_version) {
-                    println!("  [INFO] Update available: {} -> {}", current_version, tag_name);
-                } else {
-                    println!("  [OK] aktools is up to date (v{})", current_version);
+        if let Ok(body) = response.into_string() {
+            if let Ok(releases) = serde_json::from_str::<serde_json::Value>(&body) {
+                if let Some(tag_name) = releases.get("tag_name").and_then(|t| t.as_str()) {
+                    let current_version = env!("CARGO_PKG_VERSION");
+                    if tag_name != format!("v{}", current_version) {
+                        println!("  [INFO] Update available: {} -> {}", current_version, tag_name);
+                    } else {
+                        println!("  [OK] aktools is up to date (v{})", current_version);
+                    }
                 }
             }
         } else {
-            println!("  [INFO] Could not check for updates");
+            println!("  [INFO] Could not parse releases");
         }
     } else {
         println!("  [INFO] Could not connect to check for updates");
