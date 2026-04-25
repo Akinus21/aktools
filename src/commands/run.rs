@@ -79,7 +79,6 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
             }
         };
 
-        let module_path = modules_dir.join(&module.folder);
         let script_path = module_path.join("commands.sh");
 
         let has_shell_operators = opt.commands.iter().any(|cmd| {
@@ -108,4 +107,25 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
             }
         } else {
             for cmd_str in &opt.commands {
+                let mut parts = cmd_str.split_whitespace();
+                let program = parts.next().unwrap_or("");
+                let mut cmd = Command::new(program);
+                cmd.args(parts);
+                cmd.stdout(Stdio::inherit());
+                cmd.stderr(Stdio::inherit());
+                match cmd.spawn().and_then(|mut c| c.wait()) {
+                    Ok(exit_status) => {
+                        if !exit_status.success() {
+                            return 1;
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error executing command '{}': {}", cmd_str, e);
+                        return 1;
+                    }
+                }
+            }
+        }
+        0
+    }
 }
