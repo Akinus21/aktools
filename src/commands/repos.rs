@@ -465,13 +465,14 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
 
         match file_response {
             Ok(resp) => {
-                if resp.status() == 201 {
+                let status = resp.status();
+                if status == 201 {
                     println!("  Added: {}", relative_path);
-                } else if resp.status() == 200 {
+                } else if status == 200 {
                     println!("  Updated: {}", relative_path);
                 } else {
                     let err_body = resp.into_string().unwrap_or_default();
-                    eprintln!("  Warning: {} returned status {}: {}", relative_path, resp.status(), err_body);
+                    eprintln!("  Warning: {} returned status {}: {}", relative_path, status, err_body);
                 }
             }
             Err(e) => {
@@ -506,8 +507,8 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
         Err(_) => None,
     };
 
-    let base_registry: serde_json::Value = serde_json::from_str(r#"{"version":1,"modules":[]}"#).unwrap();
-    let updated_registry = if let Some(sha) = registry_sha {
+    let _base_registry: serde_json::Value = serde_json::from_str(r#"{"version":1,"modules":[]}"#).unwrap();
+    let (updated_registry, sha_to_use) = if let Some(ref sha) = registry_sha {
         let current_registry: serde_json::Value = serde_json::from_str(r#"{"version":1,"modules":[]}"#).unwrap();
 
         let new_module = serde_json::json!({
@@ -527,10 +528,11 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
         modules.retain(|m| m.get("id").and_then(|v| v.as_str()) != Some(module_name.as_str()));
         modules.push(new_module);
 
-        serde_json::json!({
+        let registry = serde_json::json!({
             "version": current_registry.get("version").unwrap_or(&serde_json::json!(1)),
             "modules": modules
-        })
+        });
+        (registry, Some(sha.clone()))
     } else {
         let new_module = serde_json::json!({
             "id": module_name,
@@ -541,10 +543,11 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
             "tags": []
         });
 
-        serde_json::json!({
+        let registry = serde_json::json!({
             "version": 1,
             "modules": [new_module]
-        })
+        });
+        (registry, None)
     };
 
     let registry_content = serde_json::to_string_pretty(&updated_registry).unwrap();
@@ -553,7 +556,7 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
     let registry_body = serde_json::json!({
         "message": format!("Update registry.json to add {} module", module_name),
         "content": encoded_registry,
-        "sha": registry_sha
+        "sha": sha_to_use
     });
 
     let registry_response = client.put(&registry_url)
@@ -617,7 +620,8 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
                 0
             } else {
                 let err_body = resp.into_string().unwrap_or_default();
-                eprintln!("Error: PR creation returned status {}: {}", resp.status(), err_body);
+                let status = resp.status();
+                eprintln!("Error: PR creation returned status {}: {}", status, err_body);
                 1
             }
         }
