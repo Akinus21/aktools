@@ -57,6 +57,13 @@ fn main() {
         Some("add") => add::execute(&config_dir, &modules_dir, &registry_path, args.args.first().cloned()),
         Some("edit") => edit::execute(&modules_dir, &registry_path, args.args.first().cloned()),
         Some("build-command") => build_command::execute(&modules_dir, &registry_path),
+        Some("rm") => rm::execute(&modules_dir, &registry_path, args.args.first().cloned()),
+        Some("update") => update::execute(&modules_dir, &registry_path),
+        Some("list") => list::execute(&modules_dir),
+        Some("doctor") => {
+            let no_fix = args.args.iter().any(|a| a == "--no-fix" || a == "--dry-run");
+            doctor::execute(&config_dir, &modules_dir, no_fix)
+        }
         Some("help") => {
             println!("AKTools - Modular CLI tool runner\n");
             println!("Commands:");
