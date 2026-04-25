@@ -341,14 +341,26 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
         }
     };
 
-    let gh_token = std::env::var("GH_TOKEN")
-        .or_else(|_| std::env::var("GITHUB_TOKEN"))
-        .unwrap_or_default();
+    let gh_token = if let Ok(token) = std::process::Command::new("gh")
+        .args(["auth", "token"])
+        .output()
+    {
+        if token.status.success() {
+            String::from_utf8_lossy(&token.stdout).trim().to_string()
+        } else {
+            std::env::var("GH_TOKEN")
+                .or_else(|_| std::env::var("GITHUB_TOKEN"))
+                .unwrap_or_default()
+        }
+    } else {
+        std::env::var("GH_TOKEN")
+            .or_else(|_| std::env::var("GITHUB_TOKEN"))
+            .unwrap_or_default()
+    };
 
     if gh_token.is_empty() {
-        println!("Error: GH_TOKEN or GITHUB_TOKEN environment variable not set.");
-        println!("Create a token at: https://github.com/settings/tokens");
-        println!("Required scope: repo");
+        println!("Error: Not authenticated with GitHub.");
+        println!("Run 'gh auth login' or set GH_TOKEN environment variable.");
         return 1;
     }
 
