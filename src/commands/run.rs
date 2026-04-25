@@ -79,7 +79,8 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
             }
         };
 
-        let script_path = module_path.join("commands.sh");
+        let flag_name = opt.flags.get(0).cloned().unwrap_or_else(|| "default".to_string());
+        let script_path = module_path.join(format!("commands_{}.sh", flag_name));
 
         let has_shell_operators = opt.commands.iter().any(|cmd| {
             cmd.contains("&&") || cmd.contains("||") || cmd.contains(";") ||
