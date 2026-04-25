@@ -648,7 +648,8 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
 
     match pr_response {
         Ok(resp) => {
-            if resp.status() == 201 {
+            let status = resp.status();
+            if status == 201 {
                 if let Ok(pr_body_resp) = resp.into_string() {
                     if let Ok(pr) = serde_json::from_str::<serde_json::Value>(&pr_body_resp) {
                         if let Some(html_url) = pr.get("html_url").and_then(|v| v.as_str()) {
@@ -656,6 +657,22 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
                             println!("\nWhen the PR is merged, the module will be added to the registry.");
                             return 0;
                         }
+                    }
+                }
+                println!("\nSuccess! Pull request created.");
+                0
+            } else {
+                let err_body = resp.into_string().unwrap_or_default();
+                eprintln!("Error: PR creation returned status {}: {}", status, err_body);
+                1
+            }
+        }
+        Err(e) => {
+            eprintln!("Error creating pull request: {}", e);
+            1
+        }
+    }
+}
                     }
                 }
                 println!("\nSuccess! Pull request created.");
