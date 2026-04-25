@@ -41,6 +41,10 @@ fn get_registry_path() -> PathBuf {
     get_config_dir().join("registry.json")
 }
 
+fn get_log_path() -> PathBuf {
+    get_config_dir().join("aktools.log")
+}
+
 fn main() {
     let args = Args::parse();
     let config_dir = get_config_dir();
@@ -51,6 +55,7 @@ fn main() {
         eprintln!("Config dir: {:?}", config_dir);
         eprintln!("Modules dir: {:?}", modules_dir);
         eprintln!("Registry: {:?}", registry_path);
+        eprintln!("Log file: {:?}", get_log_path());
     }
 
     let exit_code = match args.command.as_deref() {

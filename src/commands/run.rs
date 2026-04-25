@@ -1,8 +1,15 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::fs::{OpenOptions, write};
+use std::env;
 use crate::registry::Registry;
 
 pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args: Vec<String>) -> i32 {
+    let log_path = env::var("AKTOOLS_LOG").ok().map(|s| Path::new(&s).to_path_buf())
+        .or_else(|| {
+            let home = env::var("HOME").ok()?;
+            Some(Path::new(&home).join(".aktools").join("aktools.log"))
+        });
     let registry = match Registry::load(registry_path) {
         Ok(r) => r,
         Err(e) => {
@@ -96,26 +103,6 @@ for cmd_str in &opt.commands {
                     println!("Error executing command '{}': {}", cmd_str, e);
                     return 1;
                 }
-            } else {
-                let mut parts = cmd_str.split_whitespace();
-                let program = parts.next().unwrap_or("");
-                let mut cmd = Command::new(program);
-                cmd.args(parts);
-                cmd.stdout(Stdio::inherit());
-                cmd.stderr(Stdio::inherit());
-                match cmd.spawn().and_then(|mut c| c.wait()) {
-                    Ok(exit_status) => {
-                        if !exit_status.success() {
-                            return 1;
-                        }
-                    }
-                    Err(e) => {
-                        println!("Error executing command '{}': {}", cmd_str, e);
-                        return 1;
-                    }
-                }
-            }
-        }
             } else {
                 let mut parts = cmd_str.split_whitespace();
                 let program = parts.next().unwrap_or("");
