@@ -90,9 +90,16 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
                 cmd.arg("-c").arg(&full_cmd);
                 cmd.stdout(Stdio::inherit());
                 cmd.stderr(Stdio::inherit());
-                if let Err(e) = cmd.spawn() {
-                    println!("Error executing command '{}': {}", cmd_str, e);
-                    return 1;
+                match cmd.spawn().and_then(|mut c| c.wait()) {
+                    Ok(exit_status) => {
+                        if !exit_status.success() {
+                            return 1;
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error executing command '{}': {}", cmd_str, e);
+                        return 1;
+                    }
                 }
             } else {
                 let mut parts = cmd_str.split_whitespace();
@@ -101,9 +108,16 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
                 cmd.args(parts);
                 cmd.stdout(Stdio::inherit());
                 cmd.stderr(Stdio::inherit());
-                if let Err(e) = cmd.spawn() {
-                    println!("Error executing command '{}': {}", cmd_str, e);
-                    return 1;
+                match cmd.spawn().and_then(|mut c| c.wait()) {
+                    Ok(exit_status) => {
+                        if !exit_status.success() {
+                            return 1;
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error executing command '{}': {}", cmd_str, e);
+                        return 1;
+                    }
                 }
             }
         }
