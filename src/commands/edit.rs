@@ -133,7 +133,7 @@ pub fn execute(modules_dir: &Path, _registry_path: &Path, module_name: Option<St
                     }
                 }
 
-                print!("\nSelect option to edit (1-{}) or 'q' to quit: ", manifest.options.len());
+                print!("\nSelect option to edit (1-{}), 'a' to add, 'd' to delete, 'q' to quit: ", manifest.options.len());
                 std::io::stdout().flush().unwrap();
                 let mut input_opt = String::new();
                 if std::io::stdin().read_line(&mut input_opt).is_err() {
@@ -142,6 +142,19 @@ pub fn execute(modules_dir: &Path, _registry_path: &Path, module_name: Option<St
                 }
 
                 let input_opt = input_opt.trim();
+                if input_opt == "a" {
+                    add_option(&manifest_path, &mut manifest);
+                    continue;
+                } else if input_opt == "d" {
+                    if manifest.options.len() > 1 {
+                        delete_option(&manifest_path, &mut manifest);
+                    } else {
+                        println!("Cannot delete the last option.");
+                    }
+                    continue;
+                } else if input_opt == "q" {
+                    continue;
+                }
                 if input_opt == "q" {
                     continue;
                 }
@@ -163,7 +176,18 @@ pub fn execute(modules_dir: &Path, _registry_path: &Path, module_name: Option<St
                         }
 
                         let input_cmd = input_cmd.trim();
-                        if input_cmd == "q" {
+                        if input_cmd == "a" {
+                            add_command(&manifest_path, &manifest, opt_idx - 1);
+                    continue;
+                } else if input_cmd == "a" {
+                    add_command(&manifest_path, &manifest, opt_idx - 1);
+                    continue;
+                } else if input_cmd == "d" {
+                    delete_command(&manifest_path, &manifest, opt_idx - 1);
+                    continue;
+                } else if input_cmd == "q" {
+                            continue;
+                        }
                             continue;
                         }
 
@@ -250,7 +274,115 @@ pub fn execute(modules_dir: &Path, _registry_path: &Path, module_name: Option<St
     }
 }
 
-fn add_command_to_manifest(xml: String, opt_idx: usize) -> Option<String> {
+fn add_command(manifest_path: &Path, manifest: &crate::modules::ModuleManifest, opt_idx: usize) {
+    let option = &manifest.options[opt_idx];
+    print!("Enter new command: ");
+    std::io::stdout().flush().unwrap();
+    let mut new_cmd = String::new();
+    if std::io::stdin().read_line(&mut new_cmd).is_err() {
+        println!("Error reading input");
+        return;
+    }
+    let new_cmd = new_cmd.trim().to_string();
+    if !new_cmd.is_empty() {
+        if let Some(content) = std::fs::read_to_string(manifest_path).ok() {
+            if let Some(new_content) = add_command_to_manifest(content, opt_idx, &new_cmd) {
+                if let Err(e) = std::fs::write(manifest_path, new_content) {
+                    println!("Error updating manifest: {}", e);
+                } else {
+                    println!("Command added successfully.");
+                }
+            }
+        }
+    }
+}
+
+fn delete_command(manifest_path: &Path, manifest: &crate::modules::ModuleManifest, opt_idx: usize) {
+    let option = &manifest.options[opt_idx];
+    print!("Select command to delete (1-{}): ", option.commands.len());
+    std::io::stdout().flush().unwrap();
+    let mut input_del = String::new();
+    if std::io::stdin().read_line(&mut input_del).is_err() {
+        println!("Error reading input");
+        return;
+    }
+    if let Ok(idx) = input_del.trim().parse::<usize>() {
+        if idx > 0 && idx <= option.commands.len() {
+            if let Some(content) = std::fs::read_to_string(manifest_path).ok() {
+                if let Some(new_content) = delete_command_from_manifest(content, opt_idx, idx - 1) {
+                    if let Err(e) = std::fs::write(manifest_path, new_content) {
+                        println!("Error updating manifest: {}", e);
+                    } else {
+                        println!("Command deleted successfully.");
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn add_option(manifest_path: &Path, manifest: &crate::modules::ModuleManifest) {
+    print!("Enter flag name: ");
+    std::io::stdout().flush().unwrap();
+    let mut flag = String::new();
+    if std::io::stdin().read_line(&mut flag).is_err() {
+        println!("Error reading input");
+        return;
+    }
+    let flag = flag.trim().to_string();
+    if flag.is_empty() {
+        println!("Flag cannot be empty.");
+        return;
+    }
+
+    print!("Enter command: ");
+    std::io::stdout().flush().unwrap();
+    let mut command = String::new();
+    if std::io::stdin().read_line(&mut command).is_err() {
+        println!("Error reading input");
+        return;
+    }
+    let command = command.trim().to_string();
+    if command.is_empty() {
+        println!("Command cannot be empty.");
+        return;
+    }
+
+    if let Some(content) = std::fs::read_to_string(manifest_path).ok() {
+        if let Some(new_content) = add_option_to_manifest(content, &flag, &command) {
+            if let Err(e) = std::fs::write(manifest_path, new_content) {
+                println!("Error updating manifest: {}", e);
+            } else {
+                println!("Option added successfully.");
+            }
+        }
+    }
+}
+
+fn delete_option(manifest_path: &Path, manifest: &crate::modules::ModuleManifest) {
+    print!("Select option to delete (1-{}): ", manifest.options.len());
+    std::io::stdout().flush().unwrap();
+    let mut input_del = String::new();
+    if std::io::stdin().read_line(&mut input_del).is_err() {
+        println!("Error reading input");
+        return;
+    }
+    if let Ok(idx) = input_del.trim().parse::<usize>() {
+        if idx > 0 && idx <= manifest.options.len() {
+            if let Some(content) = std::fs::read_to_string(manifest_path).ok() {
+                if let Some(new_content) = delete_option_from_manifest(content, idx - 1) {
+                    if let Err(e) = std::fs::write(manifest_path, new_content) {
+                        println!("Error updating manifest: {}", e);
+                    } else {
+                        println!("Option deleted successfully.");
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn add_command_to_manifest(mut xml: String, opt_idx: usize, _new_cmd: &str) -> Option<String> {
     let mut in_option = false;
     let mut option_count = 0;
     let mut pos = 0;
