@@ -477,7 +477,7 @@ Description=AKTools Auto Update
 [Service]
 Type=oneshot
 ExecStart=/bin/bash -c 'aktools upgrade'
-";
+"#;
 
         if std::fs::write(&service_path, service_content).is_ok() {
             println!("    [FIXED] Updated autoupdate service to use 'aktools upgrade'");
