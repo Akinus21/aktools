@@ -70,7 +70,6 @@ impl ModuleManager {
             } else if line.starts_with("<command>") && line.ends_with("</command>") && current_option.is_some() {
                 if let Some(ref mut opt) = current_option {
                     let cmd = line.trim_start_matches("<command>").trim_end_matches("</command>").to_string();
-                    eprintln!("DEBUG: Added command: '{}'", cmd);
                     opt.commands.push(cmd);
                 }
             }
