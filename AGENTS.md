@@ -6,11 +6,12 @@ This is the Rust rewrite of AKTools - a modular CLI tool runner.
 
 ## Building
 
-```bash
-cd /home/opencode/projects/aktools
-cargo build --release
-./target/release/aktools help
-```
+**IMPORTANT: Do NOT install Rust locally.** GitHub Actions handles all building automatically. The CI workflow builds the binary and reports any errors back to you.
+
+If you need to verify code changes without building:
+1. Review the code logic manually
+2. Check for syntax errors by reading the files
+3. Push to GitHub and wait for the build results
 
 ## Git Push Workflow
 

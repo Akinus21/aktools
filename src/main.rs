@@ -5,7 +5,7 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, build_command, edit, list, rm, update, doctor, run};
+use commands::{add, build_command, edit, edit_aliases, list, rm, update, doctor, run, completion, repos};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -61,6 +61,12 @@ fn main() {
     let exit_code = match args.command.as_deref() {
         Some("add") => add::execute(&config_dir, &modules_dir, &registry_path, args.args.first().cloned()),
         Some("edit") => edit::execute(&modules_dir, &registry_path, args.args.first().cloned()),
+        Some("edit-aliases") | Some("edit_aliases") => edit_aliases::execute(&config_dir),
+        Some("completion") => completion::execute(&config_dir, args.args.clone()),
+        Some("add-repo") => repos::execute(&config_dir, args.args.clone()),
+        Some("list-repos") => repos::execute(&config_dir, args.args.clone()),
+        Some("search-mods") => repos::execute(&config_dir, args.args.clone()),
+        Some("install-mods") => repos::execute(&config_dir, args.args.clone()),
         Some("build-command") => build_command::execute(&modules_dir, &registry_path),
         Some("rm") => rm::execute(&modules_dir, &registry_path, args.args.first().cloned()),
         Some("update") => update::execute(&modules_dir, &registry_path),
@@ -75,10 +81,16 @@ fn main() {
             println!("  aktools build-command   Create a new command module interactively");
             println!("  aktools add <file>     Add a script as a module");
             println!("  aktools edit [name]    Edit a module's manifest");
+            println!("  aktools edit-aliases   Edit aliases interactively");
             println!("  aktools list           List installed modules");
             println!("  aktools rm <name>      Remove a module");
             println!("  aktools update         Rebuild the registry");
             println!("  aktools doctor         Diagnose and auto-fix issues");
+            println!("  aktools completion     Generate shell completions");
+            println!("  aktools add-repo       Add a GitHub repo to track");
+            println!("  aktools list-repos     List configured repos");
+            println!("  aktools search-mods    Search modules in repos");
+            println!("  aktools install-mods   Install modules from repos");
             println!("  aktools <module> [args...]  Run a module");
             0
         }

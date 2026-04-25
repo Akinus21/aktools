@@ -12,6 +12,8 @@ AKTools lets you package scripts as modules with custom aliases, multiple entry 
 - **Auto-fix doctor** — Diagnoses and repairs configuration issues automatically
 - **Interactive module creation** — Build command modules with an interactive prompt
 - **Homebrew install** — Easy installation via Homebrew
+- **Shell completion** — Tab completion for bash, zsh, and fish
+- **Community modules** — Install modules from GitHub repos
 
 ## Installation
 
@@ -122,10 +124,16 @@ Run with `aktools sys upgrade`.
 | `aktools build-command` | Create a new command module interactively |
 | `aktools add <file>` | Add a script as a new module |
 | `aktools edit [name]` | Edit a module's manifest |
+| `aktools edit-aliases` | Edit shell aliases interactively |
 | `aktools list` | List all installed modules |
 | `aktools rm <name>` | Remove a module |
 | `aktools update` | Rebuild the module registry |
 | `aktools doctor` | Diagnose and fix configuration issues |
+| `aktools completion <shell>` | Generate shell completions (bash/zsh/fish) |
+| `aktools add-repo <user/repo>` | Add a GitHub repo to track modules from |
+| `aktools list-repos` | List configured repos |
+| `aktools search-mods <term>` | Search for modules in repos |
+| `aktools install-mods <mod> [<mod>...]` | Install one or more modules from repos |
 | `aktools help` | Show this help message |
 
 ## Configuration
@@ -140,6 +148,41 @@ Run with `aktools sys upgrade`.
 ```bash
 brew upgrade aktools
 ```
+
+## Shell Completions
+
+Enable tab completion for your shell:
+
+```bash
+# Bash
+aktools completion bash --install
+
+# Zsh
+aktools completion zsh --install
+
+# Fish
+aktools completion fish --install
+```
+
+## Community Modules
+
+Install modules from GitHub repos:
+
+```bash
+# Add a repo to track
+aktools add-repo username/my-plugins
+
+# List configured repos
+aktools list-repos
+
+# Search for modules
+aktools search-mods mymodule
+
+# Install one or more modules (space-separated)
+aktools install-mods mymodule anothermod yetanothermod
+```
+
+The default community repo is `noctalia-dev/noctalia-plugins` which is always available.
 
 ## License
 

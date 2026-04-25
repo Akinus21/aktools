@@ -148,6 +148,7 @@ source "$AKTOOLS_HOME/aliases.sh"
 # This file is auto-generated
 
 alias ak='aktools'
+alias akt='aktools'
 alias aktools-update='aktools update'
 alias aktools-doctor='aktools doctor'
 alias aktools-add='aktools add'
@@ -158,6 +159,11 @@ alias aktools-edit='aktools edit'
                 Ok(_) => {
                     println!("  [FIXED] Created aliases file: {:?}", aliases_file);
                     fixed += 1;
+                    if let Ok(mut perms) = std::fs::metadata(&aliases_file) {
+                        use std::os::unix::fs::PermissionsExt;
+                        let _ = perms.set_mode(0o755);
+                        let _ = std::fs::set_permissions(&aliases_file, perms);
+                    }
                 }
                 Err(e) => {
                     println!("  [ERROR] Failed to create aliases file: {}", e);

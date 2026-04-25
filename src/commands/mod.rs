@@ -1,8 +1,11 @@
 pub mod add;
 pub mod build_command;
 pub mod edit;
+pub mod edit_aliases;
 pub mod list;
 pub mod rm;
 pub mod update;
 pub mod doctor;
 pub mod run;
+pub mod completion;
+pub mod repos;
