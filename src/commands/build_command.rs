@@ -227,7 +227,3 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
     println!("\nCreated module '{}' at {:?}", name, module_dir);
     0
 }
-
-    println!("\nCreated module '{}' at {:?}", name, module_dir);
-    0
-}
