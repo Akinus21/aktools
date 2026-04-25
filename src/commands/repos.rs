@@ -39,12 +39,13 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
     let subcommand = args.first().map(|s| s.as_str()).unwrap_or("list-repos");
     let module_dir = config_dir.join("modules");
     let repos_file = config_dir.join("repos.json");
+    let remaining_args = args[1..].to_vec();
 
     match subcommand {
-        "add-repo" => add_repo(&repos_file, &args[1..]),
+        "add-repo" => add_repo(&repos_file, &remaining_args),
         "list-repos" => list_repos(&repos_file),
-        "search-mods" => search_modules(&repos_file, &args[1..]),
-        "install-mods" => install_modules(&repos_file, &module_dir, config_dir, &args[1..]),
+        "search-mods" => search_modules(&repos_file, &remaining_args),
+        "install-mods" => install_modules(&repos_file, &module_dir, config_dir, &remaining_args),
         _ => {
             println!("Unknown subcommand: {}", subcommand);
             println!("Usage:");
