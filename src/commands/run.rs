@@ -5,11 +5,6 @@ use std::env;
 use crate::registry::Registry;
 
 pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args: Vec<String>) -> i32 {
-    let log_path = env::var("AKTOOLS_LOG").ok().map(|s| Path::new(&s).to_path_buf())
-        .or_else(|| {
-            let home = env::var("HOME").ok()?;
-            Some(Path::new(&home).join(".aktools").join("aktools.log"))
-        });
     let registry = match Registry::load(registry_path) {
         Ok(r) => r,
         Err(e) => {
