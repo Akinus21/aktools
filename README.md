@@ -186,6 +186,14 @@ aktools install-mods mymodule anothermod yetanothermod
 aktools add-mod mymodule
 ```
 
+This will:
+1. Fork the community repo to your GitHub account
+2. Copy your module files into the fork
+3. Update registry.json in the fork
+4. Create a pull request
+
+When you merge the PR, the module will be available to all aktools users via `aktools install-mods mymodule`.
+
 The default community repo is `Akinus21/aktools-modules` which is always available.
 
 ## License

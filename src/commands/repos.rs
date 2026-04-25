@@ -314,6 +314,7 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
     if args.is_empty() {
         println!("Usage: aktools add-mod <module-name>");
         println!("Submit a local module to the community repo for review.");
+        println!("This will fork the repo, add your module, and create a pull request.");
         return 1;
     }
 
@@ -352,65 +353,319 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
 
     println!("Submitting '{}' to community repo...", module_name);
 
-    let api_url = format!(
-        "https://api.github.com/repos/{}/pulls",
-        DEFAULT_COMMUNITY_REPO
-    );
-
-    let title = format!("feat: add {} module", module_name);
-    let head = format!("add-{}", module_name);
-    let base = "main";
-
-    let body = serde_json::json!({
-        "title": title,
-        "head": head,
-        "base": base,
-        "body": format!(
-            "## Module: {}\n\n\
-            ### manifest.xml\n\
-            ```xml\n{}\n```\n\n\
-            ### Submitter Notes\n\
-            Add any additional notes about this module here.",
-            module_name, manifest_content
-        )
-    });
-
-    let body_str = serde_json::to_string(&body).unwrap();
+    let repo_owner = "Akinus21";
+    let repo_name = "aktools-modules";
+    let api_base = "https://api.github.com";
 
     let client = ureq::Agent::new();
-    let response = client.post(&api_url)
+
+    let fork_url = format!("{}/repos/{}/{}/forks", api_base, repo_owner, repo_name);
+    println!("Forking repository...");
+
+    let fork_response = client.post(&fork_url)
+        .set("Authorization", &format!("Bearer {}", gh_token))
+        .set("Accept", "application/vnd.github+json")
+        .set("X-GitHub-Api-Version", "2022-11-28")
+        .send_string("{}");
+
+    let fork_full_name = match fork_response {
+        Ok(resp) => {
+            if resp.status() == 202 || resp.status() == 201 {
+                if let Ok(body) = resp.into_string() {
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                        json.get("full_name").and_then(|v| v.as_str()).map(|s| s.to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else if resp.status() == 202 {
+                let body = resp.into_string().unwrap_or_default();
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                    json.get("full_name").and_then(|v| v.as_str()).map(|s| s.to_string())
+                } else {
+                    None
+                }
+            } else {
+                eprintln!("Error: Could not fork repo (status {})", resp.status());
+                None
+            }
+        }
+        Err(e) => {
+            eprintln!("Error forking repository: {}", e);
+            None
+        }
+    };
+
+    let fork_full_name = match fork_full_name {
+        Some(name) => name,
+        None => {
+            let existing_fork_name = format!("{}/{}", repo_owner, repo_name);
+            println!("Using existing fork or rate limited. Trying: {}", existing_fork_name);
+            existing_fork_name
+        }
+    };
+
+    let user_login = match client.get(&format!("{}/repos/{}/{}/", api_base, repo_owner, repo_name))
+        .set("Authorization", &format!("Bearer {}", gh_token))
+        .set("Accept", "application/vnd.github+json")
+        .set("X-GitHub-Api-Version", "2022-11-28")
+        .call()
+    {
+        Ok(resp) => {
+            if let Ok(body) = resp.into_string() {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                    json.get("owner").and_then(|o| o.get("login")).and_then(|v| v.as_str()).map(|s| s.to_string())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+        Err(_) => None,
+    };
+
+    let actual_fork_name = fork_full_name.as_str();
+
+    println!("Creating module files in your fork...");
+
+    let manifests: Vec<String> = collect_files_recursive(&module_path, &module_path)
+        .into_iter()
+        .filter(|p| p.ends_with("manifest.xml") || p.ends_with(".sh") || p.ends_with(".bash") || p.ends_with(".py") || p.ends_with(".pl") || p.ends_with(".rb"))
+        .collect();
+
+    for file_path in &manifests {
+        let relative_path = file_path.strip_prefix(&module_path).unwrap_or(file_path);
+        let content = match fs::read_to_string(file_path) {
+            Ok(c) => c,
+            Err(e) => {
+                eprintln!("Error reading {}: {}", file_path, e);
+                continue;
+            }
+        };
+
+        let encoded_content = base64_encode(&content);
+        let file_path_api = format!("{}/repos/{}/contents/{}", api_base, actual_fork_name, format!("{}/{}", module_name, relative_path));
+
+        let file_body = serde_json::json!({
+            "message": format!("Add {} file from aktools add-mod", relative_path),
+            "content": encoded_content
+        });
+
+        let file_response = client.put(&file_path_api)
+            .set("Authorization", &format!("Bearer {}", gh_token))
+            .set("Accept", "application/vnd.github+json")
+            .set("X-GitHub-Api-Version", "2022-11-28")
+            .set("Content-Type", "application/json")
+            .send_string(&serde_json::to_string(&file_body).unwrap());
+
+        match file_response {
+            Ok(resp) => {
+                if resp.status() == 201 {
+                    println!("  Added: {}", relative_path);
+                } else if resp.status() == 200 {
+                    println!("  Updated: {}", relative_path);
+                } else {
+                    let err_body = resp.into_string().unwrap_or_default();
+                    eprintln!("  Warning: {} returned status {}: {}", relative_path, resp.status(), err_body);
+                }
+            }
+            Err(e) => {
+                eprintln!("  Error adding {}: {}", relative_path, e);
+            }
+        }
+    }
+
+    let registry_url = format!("{}/repos/{}/contents/registry.json", api_base, actual_fork_name);
+
+    let registry_sha = match client.get(&registry_url)
+        .set("Authorization", &format!("Bearer {}", gh_token))
+        .set("Accept", "application/vnd.github+json")
+        .set("X-GitHub-Api-Version", "2022-11-28")
+        .call()
+    {
+        Ok(resp) => {
+            if resp.status() == 200 {
+                if let Ok(body) = resp.into_string() {
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&body) {
+                        json.get("sha").and_then(|v| v.as_str()).map(|s| s.to_string())
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+        Err(_) => None,
+    };
+
+    let base_registry: serde_json::Value = serde_json::from_str(r#"{"version":1,"modules":[]}"#).unwrap();
+    let updated_registry = if let Some(sha) = registry_sha {
+        let current_registry: serde_json::Value = serde_json::from_str(r#"{"version":1,"modules":[]}"#).unwrap();
+
+        let new_module = serde_json::json!({
+            "id": module_name,
+            "name": module_name,
+            "version": "1.0.0",
+            "author": user_login.as_deref().unwrap_or("unknown"),
+            "description": format!("Module submitted via aktools add-mod"),
+            "tags": []
+        });
+
+        let mut modules = current_registry.get("modules")
+            .and_then(|v| v.as_array())
+            .map(|arr| arr.clone())
+            .unwrap_or_default();
+
+        modules.retain(|m| m.get("id").and_then(|v| v.as_str()) != Some(module_name.as_str()));
+        modules.push(new_module);
+
+        serde_json::json!({
+            "version": current_registry.get("version").unwrap_or(&serde_json::json!(1)),
+            "modules": modules
+        })
+    } else {
+        let new_module = serde_json::json!({
+            "id": module_name,
+            "name": module_name,
+            "version": "1.0.0",
+            "author": user_login.as_deref().unwrap_or("unknown"),
+            "description": format!("Module submitted via aktools add-mod"),
+            "tags": []
+        });
+
+        serde_json::json!({
+            "version": 1,
+            "modules": [new_module]
+        })
+    };
+
+    let registry_content = serde_json::to_string_pretty(&updated_registry).unwrap();
+    let encoded_registry = base64_encode(&registry_content);
+
+    let registry_body = serde_json::json!({
+        "message": format!("Update registry.json to add {} module", module_name),
+        "content": encoded_registry,
+        "sha": registry_sha
+    });
+
+    let registry_response = client.put(&registry_url)
         .set("Authorization", &format!("Bearer {}", gh_token))
         .set("Accept", "application/vnd.github+json")
         .set("X-GitHub-Api-Version", "2022-11-28")
         .set("Content-Type", "application/json")
-        .send_string(&body_str);
+        .send_string(&serde_json::to_string(&registry_body).unwrap());
 
-    match response {
+    match registry_response {
         Ok(resp) => {
-            let status = resp.status();
-            if status == 201 {
-                if let Ok(resp_body) = resp.into_string() {
-                    if let Ok(pr) = serde_json::from_str::<serde_json::Value>(&resp_body) {
+            if resp.status() == 200 || resp.status() == 201 {
+                println!("Updated registry.json");
+            } else {
+                println!("Warning: registry.json update returned status {}", resp.status());
+            }
+        }
+        Err(e) => {
+            eprintln!("Error updating registry.json: {}", e);
+        }
+    }
+
+    let pr_url = format!("{}/repos/{}/{}/pulls", api_base, repo_owner, repo_name);
+    let head_branch = format!("add-{}", module_name);
+
+    let pr_body = serde_json::json!({
+        "title": format!("feat: add {} module", module_name),
+        "head": format!("{}:{}", actual_fork_name.split('/').next().unwrap_or(""), head_branch),
+        "base": "main",
+        "body": format!(
+            "## Module: {}\n\n\
+            Submitted via `aktools add-mod {}`\n\n\
+            ### manifest.xml\n\
+            ```xml\n{}\n```",
+            module_name, module_name, manifest_content
+        )
+    });
+
+    println!("Creating pull request...");
+
+    let pr_response = client.post(&pr_url)
+        .set("Authorization", &format!("Bearer {}", gh_token))
+        .set("Accept", "application/vnd.github+json")
+        .set("X-GitHub-Api-Version", "2022-11-28")
+        .set("Content-Type", "application/json")
+        .send_string(&serde_json::to_string(&pr_body).unwrap());
+
+    match pr_response {
+        Ok(resp) => {
+            if resp.status() == 201 {
+                if let Ok(pr_body_resp) = resp.into_string() {
+                    if let Ok(pr) = serde_json::from_str::<serde_json::Value>(&pr_body_resp) {
                         if let Some(html_url) = pr.get("html_url").and_then(|v| v.as_str()) {
-                            println!("\nSuccess! PR created: {}", html_url);
+                            println!("\nSuccess! Pull request created: {}", html_url);
+                            println!("\nWhen the PR is merged, the module will be added to the registry.");
                             return 0;
                         }
                     }
                 }
-                println!("\nSuccess! PR created.");
+                println!("\nSuccess! Pull request created.");
                 0
             } else {
-                if let Ok(resp_body) = resp.into_string() {
-                    eprintln!("Error: GitHub returned status {}: {}", status, resp_body);
-                } else {
-                    eprintln!("Error: GitHub returned status {}", status);
-                }
+                let err_body = resp.into_string().unwrap_or_default();
+                eprintln!("Error: PR creation returned status {}: {}", resp.status(), err_body);
                 1
             }
         }
         Err(e) => {
-            eprintln!("Error creating PR: {}", e);
+            eprintln!("Error creating pull request: {}", e);
             1
         }
     }
+}
+
+fn base64_encode(input: &str) -> String {
+    let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut output = String::new();
+    let bytes = input.as_bytes();
+
+    for chunk in bytes.chunks(3) {
+        let b0 = chunk[0] as usize;
+        let b1 = chunk.get(1).copied().unwrap_or(0) as usize;
+        let b2 = chunk.get(2).copied().unwrap_or(0) as usize;
+
+        output.push(alphabet[b0 >> 2] as char);
+        output.push(alphabet[((b0 & 0x03) << 4) | (b1 >> 4)] as char);
+
+        if chunk.len() > 1 {
+            output.push(alphabet[((b1 & 0x0f) << 2) | (b2 >> 6)] as char);
+        } else {
+            output.push('=');
+        }
+
+        if chunk.len() > 2 {
+            output.push(alphabet[b2 & 0x3f] as char);
+        } else {
+            output.push('=');
+        }
+    }
+
+    output
+}
+
+fn collect_files_recursive(dir: &Path, base: &Path) -> Vec<PathBuf> {
+    let mut files = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                files.extend(collect_files_recursive(&path, base));
+            } else {
+                files.push(path);
+            }
+        }
+    }
+    files
 }
