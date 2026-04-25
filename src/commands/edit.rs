@@ -400,7 +400,7 @@ pub fn execute(modules_dir: &Path, _registry_path: &Path, module_name: Option<St
                                                     }
                                                 }
                                                 if !to_update.is_empty() {
-                                                    let new_lines: Vec<String> = Vec::new();
+                                                    let mut new_lines: Vec<String> = Vec::new();
                                                     for (i, line) in lines.iter().enumerate() {
                                                         if to_update.contains(&i) && !to_update.contains(&(i + 1)) {
                                                             new_lines.push(format!("        <command>{}</command>", new_cmd));
