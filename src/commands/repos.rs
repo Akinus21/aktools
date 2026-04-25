@@ -459,6 +459,7 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
 
     println!("\nSubmitting '{}' to {}/{}...", module_name, repo_owner, repo_name);
 
+    let fork_url = format!("{}/repos/{}/{}/forks", api_base, repo_owner, repo_name);
     println!("Forking repository...");
 
     let fork_response = client.post(&fork_url)

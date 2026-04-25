@@ -1,6 +1,5 @@
 use std::path::Path;
 use std::fs;
-use std::io::{self, Write};
 
 const AUTOUPDATE_SERVICE: &str = "com.aktools.autoupdate";
 
@@ -125,7 +124,7 @@ fn show_status() -> i32 {
     0
 }
 
-fn enable_autoupdate(config_dir: &Path, args: &[String]) -> i32 {
+fn enable_autoupdate(_config_dir: &Path, args: &[String]) -> i32 {
     let scheduler = detect_scheduler();
 
     if scheduler == "unknown" {
