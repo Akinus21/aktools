@@ -310,7 +310,7 @@ fn load_repos_config(repos_file: &Path) -> RepoConfig {
     RepoConfig { repos: Vec::new() }
 }
 
-fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[String]) -> i32 {
+fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[String]) -> i32 {
     if args.is_empty() {
         println!("Usage: aktools add-mod <module-name>");
         println!("Submit a local module to the community repo for review.");
@@ -351,11 +351,39 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
         return 1;
     }
 
-    println!("Submitting '{}' to community repo...", module_name);
+    let repos_config = load_repos_config(repos_file);
 
-    let repo_owner = "Akinus21";
-    let repo_name = "aktools-modules";
-    let api_base = "https://api.github.com";
+    let mut repos: Vec<(&str, &str)> = vec![("Akinus21", "aktools-modules")];
+    for repo in &repos_config.repos {
+        if repo.user != "Akinus21" || repo.repo != "aktools-modules" {
+            repos.push((repo.user.as_str(), repo.repo.as_str()));
+        }
+    }
+
+    println!("\nSelect a repo to submit to:");
+    for (i, (user, repo)) in repos.iter().enumerate() {
+        let mark = if i == 0 { " (default)" } else { "" };
+        println!("  {} - {}/{}{}", i + 1, user, repo, mark);
+    }
+
+    print!("Enter number (1-{}): ", repos.len());
+    std::io::stdout().flush().unwrap();
+    let mut input = String::new();
+    if std::io::stdin().read_line(&mut input).is_err() {
+        println!("Error reading input");
+        return 1;
+    }
+
+    let selection = match input.trim().parse::<usize>() {
+        Ok(n) if n >= 1 && n <= repos.len() => n - 1,
+        _ => {
+            println!("Invalid selection, using default (1).");
+            0
+        }
+    };
+
+    let (repo_owner, repo_name) = repos[selection];
+    println!("\nSubmitting '{}' to {}/{}...", module_name, repo_owner, repo_name);
 
     let client = ureq::Agent::new();
 
