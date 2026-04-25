@@ -68,11 +68,14 @@ jobs:
         id: tag
         run: |
           git fetch --tags
-          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.00.0")
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
           VERSION=$(echo "$PREV_TAG" | sed 's/^v//')
-          MAJOR=$(echo "$VERSION" | cut -d. -f1)
-          MINOR=$(echo "$VERSION" | cut -d. -f2)
-          PATCH=$(echo "$VERSION" | cut -d. -f3)
+          MAJOR=$(echo "$VERSION" | cut -d. -f1 | sed 's/^0*//')
+          MINOR=$(echo "$VERSION" | cut -d. -f2 | sed 's/^0*//')
+          PATCH=$(echo "$VERSION" | cut -d. -f3 | sed 's/^0*//')
+          [ -z "$MAJOR" ] && MAJOR=0
+          [ -z "$MINOR" ] && MINOR=0
+          [ -z "$PATCH" ] && PATCH=0
           PATCH=$((10#$PATCH + 1))
           NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
