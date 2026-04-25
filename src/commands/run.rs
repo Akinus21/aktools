@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::fs::{OpenOptions, write};
-use std::env;
+use std::collections::VecDeque;
 use crate::registry::Registry;
 
 pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args: Vec<String>) -> i32 {
@@ -88,15 +87,23 @@ for cmd_str in &opt.commands {
                 || cmd_str.ends_with(" &") || cmd_str.trim_end().ends_with("&");
 
             if has_shell_operator {
-                let full_cmd = format!("sh -c '{}'", cmd_str.replace("'", "'\"'\"'"));
-                eprintln!("DEBUG: Spawning: {}", full_cmd);
+                let full_cmd = cmd_str.replace("'", "'\"'\"'");
+                let wrapped = format!("sh -c '{} && wait'", full_cmd).replace(" &", "");
+                eprintln!("DEBUG: Spawning: {}", wrapped);
                 let mut cmd = Command::new("sh");
-                cmd.arg("-c").arg(&full_cmd);
+                cmd.arg("-c").arg(&wrapped);
                 cmd.stdout(Stdio::inherit());
                 cmd.stderr(Stdio::inherit());
-                if let Err(e) = cmd.spawn() {
-                    println!("Error executing command '{}': {}", cmd_str, e);
-                    return 1;
+                match cmd.spawn().and_then(|mut c| c.wait()) {
+                    Ok(exit_status) => {
+                        if !exit_status.success() {
+                            return 1;
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error executing command '{}': {}", cmd_str, e);
+                        return 1;
+                    }
                 }
             } else {
                 let mut parts = cmd_str.split_whitespace();
