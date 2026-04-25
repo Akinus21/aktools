@@ -45,9 +45,10 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
     match subcommand {
         "add-repo" => add_repo(&repos_file, &remaining_args),
         "list-repos" => list_repos(&repos_file),
-        "search-mods" => search_modules(&repos_file, &remaining_args),
-        "install-mods" => install_modules(&repos_file, &module_dir, config_dir, &remaining_args),
+        "search-mods" | "search-mod" | "mod-search" => search_modules(&repos_file, &remaining_args),
+        "install-mods" | "install-mod" | "mod-install" => install_modules(&repos_file, &module_dir, config_dir, &remaining_args),
         "add-mod" => add_mod(&repos_file, &module_dir, config_dir, &remaining_args),
+        "inspect-mod" => inspect_module(&module_dir, &remaining_args),
         _ => {
             println!("Unknown subcommand: {}", subcommand);
             println!("Usage:");
@@ -56,6 +57,7 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
             println!("  aktools search-mods <term>     Search modules");
             println!("  aktools install-mods <mod> [<mod>...]  Install module(s)");
             println!("  aktools add-mod <module>       Submit module to community repo");
+            println!("  aktools inspect-mod <module>  Show module contents");
             1
         }
     }
@@ -774,4 +776,55 @@ fn collect_files_recursive(dir: &Path, base: &Path) -> Vec<PathBuf> {
         }
     }
     files
+}
+
+fn inspect_module(modules_dir: &Path, args: &[String]) -> i32 {
+    if args.is_empty() {
+        println!("Usage: aktools inspect-mod <module-name>");
+        println!("Display contents of an installed module.");
+        return 1;
+    }
+
+    let module_name = &args[0];
+    let module_path = modules_dir.join(module_name);
+
+    if !module_path.exists() {
+        println!("Error: Module '{}' not found in ~/.aktools/modules/", module_name);
+        return 1;
+    }
+
+    if !module_path.is_dir() {
+        println!("Error: '{}' is not a directory", module_name);
+        return 1;
+    }
+
+    println!("Module: {}", module_name);
+    println!("Path: {}\n", module_path.display());
+    println!("Contents:");
+
+    match std::fs::read_dir(&module_path) {
+        Ok(entries) => {
+            let mut items: Vec<_> = entries.flatten().collect();
+            items.sort_by(|a, b| a.file_name().cmp(&b.file_name()));
+            for entry in items {
+                let file_name = entry.file_name();
+                let file_type = if entry.path().is_dir() {
+                    "/"
+                } else if entry.path().is_symlink() {
+                    "@"
+                } else {
+                    ""
+                };
+                println!("  {}{}", file_name.to_string_lossy(), file_type);
+            }
+        }
+        Err(e) => {
+            println!("Error reading module directory: {}", e);
+            return 1;
+        }
+    }
+
+    println!("\nTo work in this directory, run:");
+    println!("  cd {}", module_path.display());
+    0
 }

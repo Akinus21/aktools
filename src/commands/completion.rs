@@ -42,7 +42,7 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
 }
 
 fn generate_bash_completion() -> String {
-    let commands = "run add edit rm list update doctor help build-command edit_aliases completion add-repo list-repos search-mods install-mods add-mod autoupdate";
+    let commands = "run add edit rm list update doctor help build-command edit_aliases completion add-repo list-repos search-mods install-mods add-mod inspect-mod autoupdate";
     format!(r#"# aktools bash completion
 
 _aktools() {{
@@ -53,7 +53,7 @@ _aktools() {{
     opts="{}"
 
     case "${{prev}}" in
-        run|edit|rm)
+        run|edit|rm|inspect-mod)
             local modules=$(aktools list 2>/dev/null | grep -oE '^\S+' | tr '\n' ' ')
             COMPREPLY=($(compgen -W "${{modules}}" -- "${{cur}}"))
             ;;
@@ -67,7 +67,7 @@ complete -F _aktools aktools
 }
 
 fn generate_zsh_completion() -> String {
-    let commands_list = ["run", "add", "edit", "rm", "list", "update", "doctor", "help", "build-command", "edit_aliases", "completion", "add-repo", "list-repos", "search-mods", "install-mods", "add-mod", "autoupdate"];
+    let commands_list = ["run", "add", "edit", "rm", "list", "update", "doctor", "help", "build-command", "edit_aliases", "completion", "add-repo", "list-repos", "search-mods", "search-mod", "mod-search", "install-mods", "install-mod", "mod-install", "add-mod", "inspect-mod", "autoupdate"];
     let commands = commands_list.iter().map(|s| format!("'{}'", s)).collect::<Vec<_>>().join(" ");
     format!(r#"# aktools zsh completion
 
@@ -81,7 +81,7 @@ _aktools() {{
     fi
 
     case "${{words[2]}}" in
-        run|edit|rm)
+        run|edit|rm|inspect-mod)
             modules=($(aktools list 2>/dev/null | grep -oE '^\S+' | tr '\n' ' '))
             _describe 'module' modules
             ;;
@@ -99,8 +99,7 @@ function __aktools_modules
     aktools list 2>/dev/null | grep -oE '^\S+' | tr '\n' ' '
 end
 
-complete -c aktools -n '__fish_seen_subcommand_from run edit rm' -a '(__aktools_modules)' -d 'module'
-complete -c aktools -n '__fish_seen_subcommand_from run edit rm' -a '(__aktools_modules)' -d 'module'
+complete -c aktools -n '__fish_seen_subcommand_from run edit rm inspect-mod' -a '(__aktools_modules)' -d 'module'
 complete -c aktools -f -a 'run' -d 'Run a module'
 complete -c aktools -f -a 'add' -d 'Add a module'
 complete -c aktools -f -a 'edit' -d 'Edit a module manifest'
@@ -114,9 +113,10 @@ complete -c aktools -f -a 'edit_aliases' -d 'Edit aliases'
 complete -c aktools -f -a 'completion' -d 'Generate completions'
 complete -c aktools -f -a 'add-repo' -d 'Add a repo'
 complete -c aktools -f -a 'list-repos' -d 'List repos'
-complete -c aktools -f -a 'search-mods' -d 'Search modules'
-complete -c aktools -f -a 'install-mods' -d 'Install modules'
+complete -c aktools -f -a 'search-mods' -d 'Search modules (alias: search-mod, mod-search)'
+complete -c aktools -f -a 'install-mods' -d 'Install modules (alias: install-mod, mod-install)'
 complete -c aktools -f -a 'add-mod' -d 'Submit module to repo'
+complete -c aktools -f -a 'inspect-mod' -d 'Show module contents'
 complete -c aktools -f -a 'autoupdate' -d 'Manage autoupdate'
 "#.to_string()
 }
