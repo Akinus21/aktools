@@ -177,7 +177,7 @@ Description=AKTools Auto Update
 
 [Service]
 Type=oneshot
-ExecStart=/bin/bash -c 'brew update && brew upgrade aktools'
+ExecStart=/bin/bash -c 'aktools upgrade'
 "#);
 
     let timer_content = if schedule.starts_with('@') {
@@ -274,7 +274,7 @@ fn enable_launchd_plist(schedule: &str) -> i32 {
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>brew update && brew upgrade aktools</string>
+        <string>aktools upgrade</string>
     </array>
     <key>StartCalendarInterval</key>
     <dict>
@@ -309,7 +309,7 @@ fn enable_launchd_plist(schedule: &str) -> i32 {
     <array>
         <string>/bin/bash</string>
         <string>-c</string>
-        <string>brew update && brew upgrade aktools</string>
+        <string>aktools upgrade</string>
     </array>
     <key>StartInterval</key>
     <integer>{}</integer>
@@ -349,7 +349,7 @@ fn enable_cron(schedule: &str) -> i32 {
         schedule.to_string()
     };
 
-    let update_cmd = "brew update && brew upgrade aktools";
+    let update_cmd = "aktools upgrade";
     let new_line = format!("{} {}", cron_entry, update_cmd);
 
     let current_crontab = std::process::Command::new("crontab")

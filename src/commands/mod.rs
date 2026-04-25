@@ -10,3 +10,4 @@ pub mod run;
 pub mod completion;
 pub mod repos;
 pub mod autoupdate;
+pub mod upgrade;

@@ -42,7 +42,7 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
 }
 
 fn generate_bash_completion() -> String {
-    let commands = "run add edit rm list update doctor help build-command edit_aliases completion add-repo list-repos search-mods install-mods add-mod inspect-mod autoupdate";
+    let commands = "run add edit rm list update doctor help build-command edit_aliases completion add-repo list-repos search-mods install-mods add-mod inspect-mod autoupdate upgrade";
     format!(r#"# aktools bash completion
 
 _aktools() {{
@@ -57,6 +57,9 @@ _aktools() {{
             local modules=$(aktools list 2>/dev/null | grep -oE '^\S+' | tr '\n' ' ')
             COMPREPLY=($(compgen -W "${{modules}}" -- "${{cur}}"))
             ;;
+        upgrade)
+            COMPREPLY=($(compgen -W "aktools modules all" -- "${{cur}}"))
+            ;;
         *)
             COMPREPLY=($(compgen -W "${{opts}}" -- "${{cur}}"))
             ;;
@@ -67,13 +70,15 @@ complete -F _aktools aktools
 }
 
 fn generate_zsh_completion() -> String {
-    let commands_list = ["run", "add", "edit", "rm", "list", "update", "doctor", "help", "build-command", "edit_aliases", "completion", "add-repo", "list-repos", "search-mods", "search-mod", "mod-search", "install-mods", "install-mod", "mod-install", "add-mod", "inspect-mod", "autoupdate"];
+    let commands_list = ["run", "add", "edit", "rm", "list", "update", "doctor", "help", "build-command", "edit_aliases", "completion", "add-repo", "list-repos", "search-mods", "search-mod", "mod-search", "install-mods", "install-mod", "mod-install", "add-mod", "inspect-mod", "autoupdate", "upgrade"];
     let commands = commands_list.iter().map(|s| format!("'{}'", s)).collect::<Vec<_>>().join(" ");
+    let upgrade_targets = "'aktools' 'modules' 'all'";
     format!(r#"# aktools zsh completion
 
 _aktools() {{
-    local -a commands modules
+    local -a commands modules upgrade_opts
     commands=({commands})
+    upgrade_opts=({upgrade_targets})
 
     if (( CURRENT == 2 )); then
         _describe 'command' commands
@@ -84,6 +89,9 @@ _aktools() {{
         run|edit|rm|inspect-mod)
             modules=($(aktools list 2>/dev/null | grep -oE '^\S+' | tr '\n' ' '))
             _describe 'module' modules
+            ;;
+        upgrade)
+            _describe 'target' upgrade_opts
             ;;
     esac
 }}
@@ -100,6 +108,7 @@ function __aktools_modules
 end
 
 complete -c aktools -n '__fish_seen_subcommand_from run edit rm inspect-mod' -a '(__aktools_modules)' -d 'module'
+complete -c aktools -n '__fish_seen_subcommand_from upgrade' -a 'aktools modules all' -d 'target'
 complete -c aktools -f -a 'run' -d 'Run a module'
 complete -c aktools -f -a 'add' -d 'Add a module'
 complete -c aktools -f -a 'edit' -d 'Edit a module manifest'
@@ -118,6 +127,7 @@ complete -c aktools -f -a 'install-mods' -d 'Install modules (alias: install-mod
 complete -c aktools -f -a 'add-mod' -d 'Submit module to repo'
 complete -c aktools -f -a 'inspect-mod' -d 'Show module contents'
 complete -c aktools -f -a 'autoupdate' -d 'Manage autoupdate'
+complete -c aktools -f -a 'upgrade' -d 'Upgrade aktools and/or modules'
 "#.to_string()
 }
 

@@ -5,7 +5,7 @@ mod commands;
 mod modules;
 mod registry;
 
-use commands::{add, build_command, edit, edit_aliases, list, rm, update, doctor, run, completion, repos, autoupdate};
+use commands::{add, build_command, edit, edit_aliases, list, rm, update, doctor, run, completion, repos, autoupdate, upgrade};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -69,6 +69,7 @@ fn main() {
         Some("install-mods") => repos::execute(&config_dir, vec!["install-mods".to_string()].into_iter().chain(args.args.clone()).collect()),
         Some("add-mod") => repos::execute(&config_dir, vec!["add-mod".to_string()].into_iter().chain(args.args.clone()).collect()),
         Some("autoupdate") => autoupdate::execute(&config_dir, args.args.clone()),
+        Some("upgrade") | Some("self-upgrade") | Some("upgrade-aktools") | Some("selfupgrade") => upgrade::execute(&config_dir, args.args.clone()),
         Some("build-command") => build_command::execute(&modules_dir, &registry_path),
         Some("rm") => rm::execute(&modules_dir, &registry_path, args.args.first().cloned()),
         Some("update") => update::execute(&modules_dir, &registry_path),
