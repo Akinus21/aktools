@@ -141,9 +141,9 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
     }
 
     if has_no_flag {
-        let no_flag_commands: Vec<&String> = options.iter()
+        let no_flag_commands: Vec<String> = options.iter()
             .filter(|(f, _)| f.is_empty())
-            .map(|(_, c)| c)
+            .map(|(_, c)| c.clone())
             .collect();
         let script_content = format!("#!/bin/bash\nset -e\n\n{}\n", no_flag_commands.join("\n"));
         if let Err(e) = std::fs::write(module_dir.join(&script_name), &script_content) {
