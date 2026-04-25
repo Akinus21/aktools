@@ -79,10 +79,15 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
         };
 
         for cmd_str in &opt.commands {
-            if cmd_str.contains("sudo ") || cmd_str.trim_start() == "sudo" {
+            let has_shell_operator = cmd_str.contains("&&") || cmd_str.contains("||")
+                || cmd_str.contains("|") || cmd_str.contains(";")
+                || cmd_str.starts_with("sudo") || cmd_str.contains(" &")
+                || cmd_str.ends_with(" &") || cmd_str.trim_end().ends_with("&");
+
+            if has_shell_operator {
                 let full_cmd = format!("sh -c '{}'", cmd_str.replace("'", "'\"'\"'"));
-                let mut cmd = Command::new("sudo");
-                cmd.arg("sh").arg("-c").arg(&full_cmd);
+                let mut cmd = Command::new("sh");
+                cmd.arg("-c").arg(&full_cmd);
                 cmd.stdout(Stdio::inherit());
                 cmd.stderr(Stdio::inherit());
                 if let Err(e) = cmd.spawn() {
