@@ -35,7 +35,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
     let mut options: Vec<(String, String)> = Vec::new();
 
     loop {
-        print!("\nFlag (or 'q' to finish): ");
+        print!("\nFlag (or 'q' to finish, <ENTER> for no-flag command): ");
         io::stdout().flush().unwrap();
         let mut flag = String::new();
         if io::stdin().read_line(&mut flag).is_err() || flag.trim() == "q" {
@@ -43,8 +43,18 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
         }
         let flag = flag.trim().to_string();
         if flag.is_empty() {
-            println!("Flag cannot be empty.");
-            continue;
+            print!("No-flag command will be executed when module is called without flags. Continue? (y/n): ");
+            io::stdout().flush().unwrap();
+            let mut confirm = String::new();
+            if io::stdin().read_line(&mut confirm).is_err() {
+                println!("Error reading input.");
+                continue;
+            }
+            if confirm.trim().to_lowercase() != "y" {
+                println!("Cancelled.");
+                continue;
+            }
+            println!("Note: Commands will be saved to <module_name>.sh instead of flag-specific files.");
         }
 
         print!("Command: ");
@@ -61,7 +71,11 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
         }
 
         options.push((flag.clone(), command.clone()));
-        println!("Added: {} -> {}", flag, command);
+        if flag.is_empty() {
+            println!("Added: (no flag) -> {}", command);
+        } else {
+            println!("Added: {} -> {}", flag, command);
+        }
     }
 
     if options.is_empty() {
@@ -75,10 +89,33 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
         return 1;
     }
 
-    if let Err(e) = std::fs::create_dir_all(&module_dir) {
-        println!("Error creating module directory: {}", e);
+    if let Err(e) = std::fs::write(module_dir.join("manifest.xml"), &manifest) {
+        println!("Error writing manifest.xml: {}", e);
         return 1;
     }
+
+    if has_no_flag {
+        let no_flag_commands: Vec<&String> = options.iter()
+            .filter(|(f, _)| f.is_empty())
+            .map(|(_, c)| c)
+            .collect();
+        let script_content = format!("#!/bin/bash\nset -e\n\n{}\n", no_flag_commands.join("\n"));
+        if let Err(e) = std::fs::write(module_dir.join(&script_name), &script_content) {
+            println!("Error writing script: {}", e);
+            return 1;
+        }
+        if let Err(e) = std::fs::set_permissions(module_dir.join(&script_name), std::fs::Permissions::from_mode(0o755)) {
+            println!("Error setting script permissions: {}", e);
+            return 1;
+        }
+    }
+
+    let has_no_flag = options.iter().any(|(f, _)| f.is_empty());
+    let script_name = if has_no_flag {
+        format!("{}.sh", name)
+    } else {
+        String::from("commands.sh")
+    };
 
     let mut manifest = format!(r#"<?xml version="1.0"?>
 <module>
@@ -90,15 +127,26 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
         manifest.push_str("    <alias>{}</alias>\n");
     }
 
-    manifest.push_str("    <executable></executable>\n");
+    if has_no_flag {
+        manifest.push_str(&format!("    <executable>{}</executable>\n", script_name));
+    } else {
+        manifest.push_str("    <executable></executable>\n");
+    }
 
     for (flag, command) in &options {
-        manifest.push_str(&format!(r#"    <option>
+        if flag.is_empty() {
+            manifest.push_str(&format!(r#"    <option>
+        <flag></flag>
+        <command>{}</command>
+    </option>
+"#, command));
+        } else {
+            manifest.push_str(&format!(r#"    <option>
         <flag>{}</flag>
         <command>{}</command>
     </option>
-"#,
-            flag, command));
+"#, flag, command));
+        }
     }
 
     manifest.push_str("</module>\n");
