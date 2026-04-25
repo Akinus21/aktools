@@ -320,6 +320,17 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
     }
 
     let module_name = &args[0];
+
+    if module_name.contains('/') || module_name.contains('\\') || module_name.contains(' ') {
+        println!("Error: Invalid module name. Cannot contain '/', '\\', or spaces.");
+        return 1;
+    }
+
+    if module_name.is_empty() || module_name.len() > 50 {
+        println!("Error: Module name must be 1-50 characters.");
+        return 1;
+    }
+
     let module_path = modules_dir.join(module_name);
 
     if !module_path.exists() {
@@ -397,11 +408,57 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
 
     let (repo_owner, repo_name) = repos[selection];
     let api_base = "https://api.github.com";
-    println!("\nSubmitting '{}' to {}/{}...", module_name, repo_owner, repo_name);
 
+    println!("\nValidating repository access...");
     let client = ureq::Agent::new();
 
-    let fork_url = format!("{}/repos/{}/{}/forks", api_base, repo_owner, repo_name);
+    match client.get(&format!("{}/repos/{}/{}", api_base, repo_owner, repo_name))
+        .set("Authorization", &format!("Bearer {}", gh_token))
+        .set("Accept", "application/vnd.github+json")
+        .set("X-GitHub-Api-Version", "2022-11-28")
+        .call()
+    {
+        Ok(resp) => {
+            if resp.status() != 200 {
+                println!("Error: Cannot access repository {}/{} (status {})", repo_owner, repo_name, resp.status());
+                return 1;
+            }
+        }
+        Err(e) => {
+            println!("Error: Cannot access repository {}/{}: {}", repo_owner, repo_name, e);
+            return 1;
+        }
+    }
+
+    println!("Checking if module '{}' exists in registry...", module_name);
+    let registry_check_url = format!(
+        "https://raw.githubusercontent.com/{}/{}/main/registry.json",
+        repo_owner, repo_name
+    );
+
+    match ureq::get(&registry_check_url).call() {
+        Ok(resp) => {
+            if let Ok(body) = resp.into_string() {
+                if let Ok(registry) = serde_json::from_str::<RegistryJson>(&body) {
+                    if registry.modules.iter().any(|m| m.id.to_lowercase() == module_name.to_lowercase()) {
+                        println!("Warning: Module '{}' already exists in {}/{}", module_name, repo_owner, repo_name);
+                        println!("A PR to update it will still be created if you continue.");
+                        print!("Continue? (y/N): ");
+                        std::io::stdout().flush().unwrap();
+                        let mut confirm = String::new();
+                        if std::io::stdin().read_line(&mut confirm).is_err() || confirm.trim().to_lowercase() != "y" {
+                            println!("Cancelled.");
+                            return 0;
+                        }
+                    }
+                }
+            }
+        }
+        Err(_) => {}
+    }
+
+    println!("\nSubmitting '{}' to {}/{}...", module_name, repo_owner, repo_name);
+
     println!("Forking repository...");
 
     let fork_response = client.post(&fork_url)
