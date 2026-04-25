@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 use std::fs;
+use std::io::Write;
 
 const DEFAULT_COMMUNITY_REPO: &str = "Akinus21/aktools-modules";
 
@@ -383,6 +384,7 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
     };
 
     let (repo_owner, repo_name) = repos[selection];
+    let api_base = "https://api.github.com";
     println!("\nSubmitting '{}' to {}/{}...", module_name, repo_owner, repo_name);
 
     let client = ureq::Agent::new();
