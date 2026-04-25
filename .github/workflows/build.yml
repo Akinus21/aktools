@@ -85,7 +85,7 @@ jobs:
         run: |
           NEW_TAG="${{ steps.tag.outputs.new_tag }}"
           VERSION="${NEW_TAG#v}"
-          sed -iE "s|^version = \"[^\"]+\"|version = \"${VERSION}\"|" Cargo.toml
+          awk -F'= ' '/^\[package\]/{p=1} p && /^version/{gsub(/"[^"]+"/,"\"'"$VERSION"'\""); p=0} 1' Cargo.toml > tmp && mv tmp Cargo.toml
           git add Cargo.toml
           git config --global user.email "aktags-bot@akinus21.com"
           git config --global user.name "AkTags Bot"
