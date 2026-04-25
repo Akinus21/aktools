@@ -1,4 +1,4 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs;
 
 const DEFAULT_COMMUNITY_REPO: &str = "Akinus21/aktools-modules";
