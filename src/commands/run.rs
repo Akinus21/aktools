@@ -78,7 +78,8 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
             }
         };
 
-        for cmd_str in &opt.commands {
+for cmd_str in &opt.commands {
+            eprintln!("DEBUG: Processing command: '{}'", cmd_str);
             let has_shell_operator = cmd_str.contains("&&") || cmd_str.contains("||")
                 || cmd_str.contains("|") || cmd_str.contains(";")
                 || cmd_str.starts_with("sudo") || cmd_str.contains(" &")
@@ -86,6 +87,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
 
             if has_shell_operator {
                 let full_cmd = format!("sh -c '{}'", cmd_str.replace("'", "'\"'\"'"));
+                eprintln!("DEBUG: Spawning: {}", full_cmd);
                 let mut cmd = Command::new("sh");
                 cmd.arg("-c").arg(&full_cmd);
                 cmd.stdout(Stdio::inherit());
@@ -94,6 +96,26 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
                     println!("Error executing command '{}': {}", cmd_str, e);
                     return 1;
                 }
+            } else {
+                let mut parts = cmd_str.split_whitespace();
+                let program = parts.next().unwrap_or("");
+                let mut cmd = Command::new(program);
+                cmd.args(parts);
+                cmd.stdout(Stdio::inherit());
+                cmd.stderr(Stdio::inherit());
+                match cmd.spawn().and_then(|mut c| c.wait()) {
+                    Ok(exit_status) => {
+                        if !exit_status.success() {
+                            return 1;
+                        }
+                    }
+                    Err(e) => {
+                        println!("Error executing command '{}': {}", cmd_str, e);
+                        return 1;
+                    }
+                }
+            }
+        }
             } else {
                 let mut parts = cmd_str.split_whitespace();
                 let program = parts.next().unwrap_or("");
