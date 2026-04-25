@@ -1,6 +1,6 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
-use std::collections::VecDeque;
+use std::fs;
 use crate::registry::Registry;
 
 pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args: Vec<String>) -> i32 {
@@ -79,52 +79,33 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
             }
         };
 
-for cmd_str in &opt.commands {
-            eprintln!("DEBUG: Processing command: '{}'", cmd_str);
-            let has_shell_operator = cmd_str.contains("&&") || cmd_str.contains("||")
-                || cmd_str.contains("|") || cmd_str.contains(";")
-                || cmd_str.starts_with("sudo") || cmd_str.contains(" &")
-                || cmd_str.ends_with(" &") || cmd_str.trim_end().ends_with("&");
+        let module_path = modules_dir.join(&module.folder);
+        let script_path = module_path.join("commands.sh");
 
-            if has_shell_operator {
-                let full_cmd = cmd_str.replace("'", "'\"'\"'");
-                let wrapped = format!("sh -c '{} && wait'", full_cmd).replace(" &", "");
-                eprintln!("DEBUG: Spawning: {}", wrapped);
-                let mut cmd = Command::new("sh");
-                cmd.arg("-c").arg(&wrapped);
-                cmd.stdout(Stdio::inherit());
-                cmd.stderr(Stdio::inherit());
-                match cmd.spawn().and_then(|mut c| c.wait()) {
-                    Ok(exit_status) => {
-                        if !exit_status.success() {
-                            return 1;
-                        }
-                    }
-                    Err(e) => {
-                        println!("Error executing command '{}': {}", cmd_str, e);
+        let has_shell_operators = opt.commands.iter().any(|cmd| {
+            cmd.contains("&&") || cmd.contains("||") || cmd.contains(";") ||
+            cmd.starts_with("sudo") || cmd.contains(" &") || cmd.ends_with(" &") ||
+            cmd.trim_end().ends_with("&")
+        });
+
+        if has_shell_operators && !opt.commands.is_empty() {
+            let script_content = format!("#!/bin/bash\nset -e\n\n{}\n", opt.commands.join("\n"));
+            fs::write(&script_path, script_content).ok();
+            let mut cmd = Command::new("bash");
+            cmd.arg(&script_path);
+            cmd.stdout(Stdio::inherit());
+            cmd.stderr(Stdio::inherit());
+            match cmd.spawn().and_then(|mut c| c.wait()) {
+                Ok(exit_status) => {
+                    if !exit_status.success() {
                         return 1;
                     }
                 }
-            } else {
-                let mut parts = cmd_str.split_whitespace();
-                let program = parts.next().unwrap_or("");
-                let mut cmd = Command::new(program);
-                cmd.args(parts);
-                cmd.stdout(Stdio::inherit());
-                cmd.stderr(Stdio::inherit());
-                match cmd.spawn().and_then(|mut c| c.wait()) {
-                    Ok(exit_status) => {
-                        if !exit_status.success() {
-                            return 1;
-                        }
-                    }
-                    Err(e) => {
-                        println!("Error executing command '{}': {}", cmd_str, e);
-                        return 1;
-                    }
+                Err(e) => {
+                    println!("Error executing commands: {}", e);
+                    return 1;
                 }
             }
-        }
-        0
-    }
+        } else {
+            for cmd_str in &opt.commands {
 }

@@ -168,4 +168,26 @@ impl ModuleManager {
         }
         fs::write(shell_file, content)
     }
+
+    pub fn has_shell_operators(commands: &[String]) -> bool {
+        commands.iter().any(|cmd| {
+            cmd.contains("&&") || cmd.contains("||") || cmd.contains(";") || 
+            cmd.starts_with("sudo") || cmd.contains(" &") || cmd.ends_with(" &") || 
+            cmd.trim_end().ends_with("&")
+        })
+    }
+
+    pub fn generate_shell_script(module_path: &Path, commands: &[String]) -> std::io::Result<()> {
+        let script_path = module_path.join("commands.sh");
+        let mut content = String::from("#!/bin/bash\nset -e\n\n");
+        
+        for cmd in commands {
+            content.push_str(cmd);
+            content.push('\n');
+        }
+        
+        fs::write(&script_path, content)?;
+        fs::set_permissions(&script_path, fs::Permissions::from_mode(0o755))?;
+        Ok(())
+    }
 }
