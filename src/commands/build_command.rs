@@ -83,11 +83,57 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
         return 1;
     }
 
+    let has_no_flag = options.iter().any(|(f, _)| f.is_empty());
+    let script_name = if has_no_flag {
+        format!("{}.sh", name)
+    } else {
+        String::from("commands.sh")
+    };
+
     let module_dir = modules_dir.join(&name);
     if module_dir.exists() {
         println!("Error: module '{}' already exists at {:?}", name, module_dir);
         return 1;
     }
+
+    if let Err(e) = std::fs::create_dir_all(&module_dir) {
+        println!("Error creating module directory: {}", e);
+        return 1;
+    }
+
+    let mut manifest = format!(r#"<?xml version="1.0"?>
+<module>
+    <name>{}</name>
+"#,
+        name);
+
+    if !aliases.is_empty() {
+        manifest.push_str("    <alias>{}</alias>\n");
+    }
+
+    if has_no_flag {
+        manifest.push_str(&format!("    <executable>{}</executable>\n", script_name));
+    } else {
+        manifest.push_str("    <executable></executable>\n");
+    }
+
+    for (flag, command) in &options {
+        if flag.is_empty() {
+            manifest.push_str(&format!(r#"    <option>
+        <flag></flag>
+        <command>{}</command>
+    </option>
+"#, command));
+        } else {
+            manifest.push_str(&format!(r#"    <option>
+        <flag>{}</flag>
+        <command>{}</command>
+    </option>
+"#, flag, command));
+        }
+    }
+
+    manifest.push_str("</module>\n");
 
     if let Err(e) = std::fs::write(module_dir.join("manifest.xml"), &manifest) {
         println!("Error writing manifest.xml: {}", e);
@@ -104,6 +150,7 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
             println!("Error writing script: {}", e);
             return 1;
         }
+        use std::os::unix::fs::PermissionsExt;
         if let Err(e) = std::fs::set_permissions(module_dir.join(&script_name), std::fs::Permissions::from_mode(0o755)) {
             println!("Error setting script permissions: {}", e);
             return 1;
