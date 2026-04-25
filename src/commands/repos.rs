@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::fs;
 
-const DEFAULT_COMMUNITY_REPO: &str = "noctalia-dev/noctalia-plugins";
+const DEFAULT_COMMUNITY_REPO: &str = "Akinus21/aktools-modules";
 
 #[derive(serde::Serialize, serde::Deserialize)]
 struct RepoConfig {

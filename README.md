@@ -182,7 +182,7 @@ aktools search-mods mymodule
 aktools install-mods mymodule anothermod yetanothermod
 ```
 
-The default community repo is `noctalia-dev/noctalia-plugins` which is always available.
+The default community repo is `Akinus21/aktools-modules` which is always available.
 
 ## License
 
