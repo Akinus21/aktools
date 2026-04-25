@@ -250,7 +250,7 @@ pub fn execute(modules_dir: &Path, _registry_path: &Path, module_name: Option<St
     }
 }
 
-fn add_command_to_manifest(mut xml: String, opt_idx: usize) -> Option<String> {
+fn add_command_to_manifest(xml: String, _opt_idx: usize) -> Option<String> {
     let mut in_option = false;
     let mut option_count = 0;
     let mut pos = 0;
@@ -306,7 +306,7 @@ fn add_command_to_manifest(mut xml: String, opt_idx: usize) -> Option<String> {
     Some(new_lines.join("\n"))
 }
 
-fn delete_command_from_manifest(mut xml: String, opt_idx: usize, cmd_idx: usize) -> Option<String> {
+fn delete_command_from_manifest(xml: String, _opt_idx: usize, _cmd_idx: usize) -> Option<String> {
     let lines: Vec<String> = xml.lines().map(|l| l.to_string()).collect();
     let mut in_option = false;
     let mut option_count = 0;
@@ -351,7 +351,7 @@ fn delete_command_from_manifest(mut xml: String, opt_idx: usize, cmd_idx: usize)
     Some(new_lines.join("\n"))
 }
 
-fn update_command_in_manifest(mut xml: String, opt_idx: usize, cmd_idx: usize, new_cmd: &str) -> Option<String> {
+fn update_command_in_manifest(xml: String, _opt_idx: usize, _cmd_idx: usize, _new_cmd: &str) -> Option<String> {
     let lines: Vec<String> = xml.lines().map(|l| l.to_string()).collect();
     let mut in_option = false;
     let mut option_count = 0;
