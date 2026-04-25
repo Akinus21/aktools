@@ -135,6 +135,7 @@ Run with `aktools sys upgrade`.
 | `aktools search-mods <term>` | Search for modules in repos |
 | `aktools install-mods <mod> [<mod>...]` | Install one or more modules from repos |
 | `aktools add-mod <module>` | Submit a module to the community repo |
+| `aktools autoupdate <sub>` | Manage automatic updates (status/enable/disable/set) |
 | `aktools help` | Show this help message |
 
 ## Configuration
@@ -149,6 +150,16 @@ Run with `aktools sys upgrade`.
 ```bash
 brew upgrade aktools
 ```
+
+Or enable automatic updates:
+
+```bash
+aktools autoupdate status   # Check current status
+aktools autoupdate enable   # Enable daily updates
+aktools autoupdate set 12h # Update every 12 hours
+```
+
+Supports systemd, launchd (macOS), and cron.
 
 ## Shell Completions
 
