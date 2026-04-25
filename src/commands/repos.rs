@@ -375,12 +375,15 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, config_dir: &Path, args: &[Str
         )
     });
 
+    let body_str = serde_json::to_string(&body).unwrap();
+
     let client = ureq::Agent::new();
     let response = client.post(&api_url)
         .set("Authorization", &format!("Bearer {}", gh_token))
         .set("Accept", "application/vnd.github+json")
         .set("X-GitHub-Api-Version", "2022-11-28")
-        .send_json(body);
+        .set("Content-Type", "application/json")
+        .send_string(&body_str);
 
     match response {
         Ok(resp) => {
