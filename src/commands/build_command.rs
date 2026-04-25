@@ -140,6 +140,11 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
         return 1;
     }
 
+    let readme_content = format!("# {}\n\nDescribe what this module does here.\n", name);
+    if let Err(e) = std::fs::write(module_dir.join("README.md"), &readme_content) {
+        println!("Error writing README.md: {}", e);
+    }
+
     if has_no_flag {
         let no_flag_commands: Vec<String> = options.iter()
             .filter(|(f, _)| f.is_empty())
@@ -217,8 +222,11 @@ pub fn execute(modules_dir: &Path, registry_path: &Path) -> i32 {
             r.save(registry_path)
         }) {
         println!("Error updating registry: {}", e);
-        return 1;
     }
+
+    println!("\nCreated module '{}' at {:?}", name, module_dir);
+    0
+}
 
     println!("\nCreated module '{}' at {:?}", name, module_dir);
     0

@@ -136,6 +136,10 @@ impl ModuleManager {
         );
 
         fs::write(module_dir.join("manifest.xml"), manifest)?;
+
+        let readme = format!("# {}\n\nDescribe what this module does here.\n", name);
+        fs::write(module_dir.join("README.md"), readme)?;
+
         Ok(module_dir)
     }
 
