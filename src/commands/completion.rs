@@ -1,6 +1,5 @@
 use std::path::Path;
 use std::fs;
-use std::io::Write;
 
 pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
     let shell = args.first().map(|s| s.as_str()).unwrap_or("bash");
@@ -94,8 +93,7 @@ _aktools "$@"
 }
 
 fn generate_fish_completion() -> String {
-    let commands = "run add edit rm list update doctor help build-command edit_aliases completion add-repo list-repos search-mods install-mods";
-    format!(r#"# aktools fish completion
+    r#"# aktools fish completion
 
 function __aktools_modules
     aktools list 2>/dev/null | grep -oE '^\S+' | tr '\n' ' '
@@ -118,7 +116,7 @@ complete -c aktools -f -a 'add-repo' -d 'Add a repo'
 complete -c aktools -f -a 'list-repos' -d 'List repos'
 complete -c aktools -f -a 'search-mods' -d 'Search modules'
 complete -c aktools -f -a 'install-mods' -d 'Install modules'
-"#, commands)
+"#.to_string()
 }
 
 fn install_completion(config_dir: &Path, shell: &str, script: &str) -> i32 {
@@ -149,7 +147,8 @@ fn install_completion(config_dir: &Path, shell: &str, script: &str) -> i32 {
         }
         "zsh" => {
             let rc_file = home.join(".zshrc");
-            add_to_shell_config(&rc_file, "[ -f ~/.aktools/completions/_aktools ] && fpath+=~/.aktools/completions", completion_line);
+            let completion_line = "fpath+=\"$AKTOOLS_HOME/completions\"\n";
+            add_to_shell_config(&rc_file, "[ -f ~/.aktools/completions/_aktools ] && fpath+=~/.aktools/completions", &completion_line);
         }
         "fish" => {
             let config_dir_fish = home.join(".config/fish");

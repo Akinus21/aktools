@@ -1,6 +1,5 @@
 use std::path::Path;
 use std::fs;
-use std::io::{self, Write};
 
 const DEFAULT_COMMUNITY_REPO: &str = "noctalia-dev/noctalia-plugins";
 
@@ -45,7 +44,7 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
         "add-repo" => add_repo(&repos_file, &args[1..]),
         "list-repos" => list_repos(&repos_file),
         "search-mods" => search_modules(&repos_file, &args[1..]),
-        "install-mods" => install_modules(&repos_file, &module_dir, &args[1..]),
+        "install-mods" => install_modules(&repos_file, &module_dir, config_dir, &args[1..]),
         _ => {
             println!("Unknown subcommand: {}", subcommand);
             println!("Usage:");
@@ -194,7 +193,7 @@ fn search_modules(repos_file: &Path, args: &[String]) -> i32 {
     0
 }
 
-fn install_modules(repos_file: &Path, modules_dir: &Path, args: &[String]) -> i32 {
+fn install_modules(repos_file: &Path, modules_dir: &Path, config_dir: &Path, args: &[String]) -> i32 {
     if args.is_empty() {
         println!("Usage: aktools install-mods <module> [<module>...]");
         return 1;
