@@ -431,9 +431,12 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
 
     println!("Creating module files in your fork...");
 
-    let manifests: Vec<String> = collect_files_recursive(&module_path, &module_path)
+    let manifests: Vec<PathBuf> = collect_files_recursive(&module_path, &module_path)
         .into_iter()
-        .filter(|p| p.ends_with("manifest.xml") || p.ends_with(".sh") || p.ends_with(".bash") || p.ends_with(".py") || p.ends_with(".pl") || p.ends_with(".rb"))
+        .filter(|p| {
+            let p_str = p.to_string_lossy();
+            p_str.ends_with("manifest.xml") || p_str.ends_with(".sh") || p_str.ends_with(".bash") || p_str.ends_with(".py") || p_str.ends_with(".pl") || p_str.ends_with(".rb")
+        })
         .collect();
 
     for file_path in &manifests {
@@ -441,13 +444,14 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
         let content = match fs::read_to_string(file_path) {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("Error reading {}: {}", file_path, e);
+                eprintln!("Error reading {}: {}", file_path.display(), e);
                 continue;
             }
         };
 
         let encoded_content = base64_encode(&content);
-        let file_path_api = format!("{}/repos/{}/contents/{}", api_base, actual_fork_name, format!("{}/{}", module_name, relative_path));
+        let relative_str = relative_path.to_string_lossy();
+        let file_path_api = format!("{}/repos/{}/contents/{}", api_base, actual_fork_name, format!("{}/{}", module_name, relative_str));
 
         let file_body = serde_json::json!({
             "message": format!("Add {} file from aktools add-mod", relative_path),
