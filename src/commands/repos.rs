@@ -673,23 +673,6 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[St
         }
     }
 }
-                    }
-                }
-                println!("\nSuccess! Pull request created.");
-                0
-            } else {
-                let status = resp.status();
-                let err_body = resp.into_string().unwrap_or_default();
-                eprintln!("Error: PR creation returned status {}: {}", status, err_body);
-                1
-            }
-        }
-        Err(e) => {
-            eprintln!("Error creating pull request: {}", e);
-            1
-        }
-    }
-}
 
 fn base64_encode(input: &str) -> String {
     let alphabet = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
