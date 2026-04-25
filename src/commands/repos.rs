@@ -46,6 +46,7 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
         "list-repos" => list_repos(&repos_file),
         "search-mods" => search_modules(&repos_file, &remaining_args),
         "install-mods" => install_modules(&repos_file, &module_dir, config_dir, &remaining_args),
+        "add-mod" => add_mod(&repos_file, &module_dir, config_dir, &remaining_args),
         _ => {
             println!("Unknown subcommand: {}", subcommand);
             println!("Usage:");
@@ -53,6 +54,7 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
             println!("  aktools list-repos             List configured repos");
             println!("  aktools search-mods <term>     Search modules");
             println!("  aktools install-mods <mod> [<mod>...]  Install module(s)");
+            println!("  aktools add-mod <module>       Submit module to community repo");
             1
         }
     }
@@ -306,4 +308,105 @@ fn load_repos_config(repos_file: &Path) -> RepoConfig {
         }
     }
     RepoConfig { repos: Vec::new() }
+}
+
+fn add_mod(repos_file: &Path, modules_dir: &Path, config_dir: &Path, args: &[String]) -> i32 {
+    if args.is_empty() {
+        println!("Usage: aktools add-mod <module-name>");
+        println!("Submit a local module to the community repo for review.");
+        return 1;
+    }
+
+    let module_name = &args[0];
+    let module_path = modules_dir.join(module_name);
+
+    if !module_path.exists() {
+        println!("Error: Module '{}' not found in ~/.aktools/modules/", module_name);
+        return 1;
+    }
+
+    let manifest_path = module_path.join("manifest.xml");
+    if !manifest_path.exists() {
+        println!("Error: Module '{}' has no manifest.xml", module_name);
+        return 1;
+    }
+
+    let manifest_content = match fs::read_to_string(&manifest_path) {
+        Ok(c) => c,
+        Err(e) => {
+            println!("Error reading manifest: {}", e);
+            return 1;
+        }
+    };
+
+    let gh_token = std::env::var("GH_TOKEN")
+        .or_else(|_| std::env::var("GITHUB_TOKEN"))
+        .unwrap_or_default();
+
+    if gh_token.is_empty() {
+        println!("Error: GH_TOKEN or GITHUB_TOKEN environment variable not set.");
+        println!("Create a token at: https://github.com/settings/tokens");
+        println!("Required scope: repo");
+        return 1;
+    }
+
+    println!("Submitting '{}' to community repo...", module_name);
+
+    let api_url = format!(
+        "https://api.github.com/repos/{}/pulls",
+        DEFAULT_COMMUNITY_REPO
+    );
+
+    let title = format!("feat: add {} module", module_name);
+    let head = format!("add-{}", module_name);
+    let base = "main";
+
+    let body = serde_json::json!({
+        "title": title,
+        "head": head,
+        "base": base,
+        "body": format!(
+            "## Module: {}\n\n\
+            ### manifest.xml\n\
+            ```xml\n{}\n```\n\n\
+            ### Submitter Notes\n\
+            Add any additional notes about this module here.",
+            module_name, manifest_content
+        )
+    });
+
+    let client = ureq::Agent::new();
+    let response = client.post(&api_url)
+        .set("Authorization", &format!("Bearer {}", gh_token))
+        .set("Accept", "application/vnd.github+json")
+        .set("X-GitHub-Api-Version", "2022-11-28")
+        .send_json(body);
+
+    match response {
+        Ok(resp) => {
+            if resp.status() == 201 {
+                if let Ok(resp_body) = resp.into_string() {
+                    if let Ok(pr) = serde_json::from_str::<serde_json::Value>(&resp_body) {
+                        if let Some(html_url) = pr.get("html_url").and_then(|v| v.as_str()) {
+                            println!("\nSuccess! PR created: {}", html_url);
+                            return 0;
+                        }
+                    }
+                }
+                println!("\nSuccess! PR created.");
+                0
+            } else {
+                if let Ok(resp_body) = resp.into_string() {
+                    eprintln!("Error: GitHub returned status {}: {}", resp.status(), resp_body);
+                } else {
+                    eprintln!("Error: GitHub returned status {}", resp.status());
+                }
+                1
+            }
+        }
+        Err(e) => {
+            eprintln!("Error creating PR: {}", e);
+            1
+        }
+    }
 }

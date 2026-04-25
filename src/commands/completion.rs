@@ -42,7 +42,7 @@ pub fn execute(config_dir: &Path, args: Vec<String>) -> i32 {
 }
 
 fn generate_bash_completion() -> String {
-    let commands = "run add edit rm list update doctor help build-command edit_aliases completion add-repo list-repos search-mods install-mods";
+    let commands = "run add edit rm list update doctor help build-command edit_aliases completion add-repo list-repos search-mods install-mods add-mod";
     format!(r#"# aktools bash completion
 
 _aktools() {{
@@ -67,7 +67,7 @@ complete -F _aktools aktools
 }
 
 fn generate_zsh_completion() -> String {
-    let commands_list = ["run", "add", "edit", "rm", "list", "update", "doctor", "help", "build-command", "edit_aliases", "completion", "add-repo", "list-repos", "search-mods", "install-mods"];
+    let commands_list = ["run", "add", "edit", "rm", "list", "update", "doctor", "help", "build-command", "edit_aliases", "completion", "add-repo", "list-repos", "search-mods", "install-mods", "add-mod"];
     let commands = commands_list.iter().map(|s| format!("'{}'", s)).collect::<Vec<_>>().join(" ");
     format!(r#"# aktools zsh completion
 
@@ -116,6 +116,7 @@ complete -c aktools -f -a 'add-repo' -d 'Add a repo'
 complete -c aktools -f -a 'list-repos' -d 'List repos'
 complete -c aktools -f -a 'search-mods' -d 'Search modules'
 complete -c aktools -f -a 'install-mods' -d 'Install modules'
+complete -c aktools -f -a 'add-mod' -d 'Submit module to repo'
 "#.to_string()
 }
 

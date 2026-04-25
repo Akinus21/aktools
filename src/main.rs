@@ -67,6 +67,7 @@ fn main() {
         Some("list-repos") => repos::execute(&config_dir, vec!["list-repos".to_string()].into_iter().chain(args.args.clone()).collect()),
         Some("search-mods") => repos::execute(&config_dir, vec!["search-mods".to_string()].into_iter().chain(args.args.clone()).collect()),
         Some("install-mods") => repos::execute(&config_dir, vec!["install-mods".to_string()].into_iter().chain(args.args.clone()).collect()),
+        Some("add-mod") => repos::execute(&config_dir, vec!["add-mod".to_string()].into_iter().chain(args.args.clone()).collect()),
         Some("build-command") => build_command::execute(&modules_dir, &registry_path),
         Some("rm") => rm::execute(&modules_dir, &registry_path, args.args.first().cloned()),
         Some("update") => update::execute(&modules_dir, &registry_path),
@@ -91,6 +92,7 @@ fn main() {
             println!("  aktools list-repos     List configured repos");
             println!("  aktools search-mods    Search modules in repos");
             println!("  aktools install-mods   Install modules from repos");
+            println!("  aktools add-mod        Submit module to community repo");
             println!("  aktools <module> [args...]  Run a module");
             0
         }

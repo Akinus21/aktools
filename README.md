@@ -134,6 +134,7 @@ Run with `aktools sys upgrade`.
 | `aktools list-repos` | List configured repos |
 | `aktools search-mods <term>` | Search for modules in repos |
 | `aktools install-mods <mod> [<mod>...]` | Install one or more modules from repos |
+| `aktools add-mod <module>` | Submit a module to the community repo |
 | `aktools help` | Show this help message |
 
 ## Configuration
@@ -180,6 +181,9 @@ aktools search-mods mymodule
 
 # Install one or more modules (space-separated)
 aktools install-mods mymodule anothermod yetanothermod
+
+# Submit your module to the community repo
+aktools add-mod mymodule
 ```
 
 The default community repo is `Akinus21/aktools-modules` which is always available.
