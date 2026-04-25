@@ -76,6 +76,17 @@ jobs:
           NEW_TAG="v${MAJOR}.${MINOR}.${PATCH}"
           echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
 
+      - name: Update Cargo.toml version
+        if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: |
+          NEW_TAG="${{ steps.tag.outputs.new_tag }}"
+          VERSION="${NEW_TAG#v}"
+          sed -i "s/^version = \".*\"/version = \"${VERSION}\"/" Cargo.toml
+          git add Cargo.toml
+          git config --global user.email "aktags-bot@akinus21.com"
+          git config --global user.name "AkTags Bot"
+          git commit -m "chore: bump version to ${VERSION}"
+
       - name: Tag and create GitHub release with binary
         if: success() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         id: release
