@@ -79,13 +79,17 @@ pub fn execute(modules_dir: &Path, registry_path: &Path, module_name: &str, args
         };
 
         for cmd_str in &opt.commands {
+            eprintln!("DEBUG run: cmd_str='{}'", cmd_str);
             let has_shell_operator = cmd_str.contains("&&") || cmd_str.contains("||")
                 || cmd_str.contains("|") || cmd_str.contains(";")
                 || cmd_str.starts_with("sudo") || cmd_str.contains(" &")
                 || cmd_str.ends_with(" &") || cmd_str.trim_end().ends_with("&");
 
+            eprintln!("DEBUG run: has_shell_operator={}", has_shell_operator);
+
             if has_shell_operator {
                 let full_cmd = format!("sh -c '{}'", cmd_str.replace("'", "'\"'\"'"));
+                eprintln!("DEBUG run: full_cmd='{}'", full_cmd);
                 let mut cmd = Command::new("sh");
                 cmd.arg("-c").arg(&full_cmd);
                 cmd.stdout(Stdio::inherit());
