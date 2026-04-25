@@ -619,8 +619,8 @@ fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[S
                 println!("\nSuccess! Pull request created.");
                 0
             } else {
-                let err_body = resp.into_string().unwrap_or_default();
                 let status = resp.status();
+                let err_body = resp.into_string().unwrap_or_default();
                 eprintln!("Error: PR creation returned status {}: {}", status, err_body);
                 1
             }
