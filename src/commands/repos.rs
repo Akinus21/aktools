@@ -310,7 +310,7 @@ fn load_repos_config(repos_file: &Path) -> RepoConfig {
     RepoConfig { repos: Vec::new() }
 }
 
-fn add_mod(repos_file: &Path, modules_dir: &Path, config_dir: &Path, args: &[String]) -> i32 {
+fn add_mod(_repos_file: &Path, modules_dir: &Path, _config_dir: &Path, args: &[String]) -> i32 {
     if args.is_empty() {
         println!("Usage: aktools add-mod <module-name>");
         println!("Submit a local module to the community repo for review.");
@@ -387,7 +387,8 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, config_dir: &Path, args: &[Str
 
     match response {
         Ok(resp) => {
-            if resp.status() == 201 {
+            let status = resp.status();
+            if status == 201 {
                 if let Ok(resp_body) = resp.into_string() {
                     if let Ok(pr) = serde_json::from_str::<serde_json::Value>(&resp_body) {
                         if let Some(html_url) = pr.get("html_url").and_then(|v| v.as_str()) {
@@ -400,9 +401,9 @@ fn add_mod(repos_file: &Path, modules_dir: &Path, config_dir: &Path, args: &[Str
                 0
             } else {
                 if let Ok(resp_body) = resp.into_string() {
-                    eprintln!("Error: GitHub returned status {}: {}", resp.status(), resp_body);
+                    eprintln!("Error: GitHub returned status {}: {}", status, resp_body);
                 } else {
-                    eprintln!("Error: GitHub returned status {}", resp.status());
+                    eprintln!("Error: GitHub returned status {}", status);
                 }
                 1
             }
