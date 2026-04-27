@@ -110,7 +110,7 @@ end
 complete -c aktools -n '__fish_seen_subcommand_from run edit rm inspect-mod' -a '(__aktools_modules)' -d 'module'
 complete -c aktools -n '__fish_seen_subcommand_from upgrade' -a 'aktools modules all' -d 'target'
 complete -c aktools -f -a 'run' -d 'Run a module'
-complete -c aktools -f -a 'add' -d 'Add a module'
+complete -c aktools -f -a 'add' -d 'Add a module (-l for symlink)'
 complete -c aktools -f -a 'edit' -d 'Edit a module manifest'
 complete -c aktools -f -a 'rm' -d 'Remove a module'
 complete -c aktools -f -a 'list' -d 'List installed modules'

@@ -3,12 +3,28 @@ use std::path::Path;
 use crate::modules::ModuleManager;
 use crate::registry::Registry;
 
-pub fn execute(config_dir: &Path, modules_dir: &Path, registry_path: &Path, filename: Option<String>) -> i32 {
+pub fn execute(config_dir: &Path, modules_dir: &Path, registry_path: &Path, args: &[String]) -> i32 {
+    let mut use_link = false;
+    let mut filename: Option<String> = None;
+
+    for arg in args {
+        match arg.as_str() {
+            "-l" | "--link" => {
+                use_link = true;
+            }
+            _ => {
+                if !arg.starts_with('-') && filename.is_none() {
+                    filename = Some(arg.clone());
+                }
+            }
+        }
+    }
+
     let filename = match filename {
         Some(f) => f,
         None => {
             println!("Error: filename required");
-            println!("Usage: aktools add <filename>");
+            println!("Usage: aktools add <filename> [-l|--link]");
             return 1;
         }
     };
@@ -63,7 +79,7 @@ pub fn execute(config_dir: &Path, modules_dir: &Path, registry_path: &Path, file
         }
     }
 
-    match ModuleManager::create_module_folder(modules_dir, &name, &aliases, source_path) {
+    match ModuleManager::create_module_folder(modules_dir, &name, &aliases, source_path, use_link) {
         Ok(module_dir) => {
             println!("Created module at: {:?}", module_dir);
             let modules = ModuleManager::scan_modules(modules_dir).unwrap_or_default();

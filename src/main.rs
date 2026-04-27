@@ -59,7 +59,7 @@ fn main() {
     }
 
     let exit_code = match args.command.as_deref() {
-        Some("add") => add::execute(&config_dir, &modules_dir, &registry_path, args.args.first().cloned()),
+        Some("add") => add::execute(&config_dir, &modules_dir, &registry_path, &args.args),
         Some("edit") => edit::execute(&modules_dir, &registry_path, args.args.first().cloned()),
         Some("edit-aliases") | Some("edit_aliases") => edit_aliases::execute(&config_dir),
         Some("completion") => completion::execute(&config_dir, args.args.clone()),

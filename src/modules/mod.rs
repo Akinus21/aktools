@@ -108,6 +108,7 @@ impl ModuleManager {
         name: &str,
         aliases: &[String],
         source_file: &Path,
+        use_link: bool,
     ) -> std::io::Result<std::path::PathBuf> {
         let module_dir = modules_dir.join(name);
         fs::create_dir_all(&module_dir)?;
@@ -117,7 +118,15 @@ impl ModuleManager {
             .to_string_lossy()
             .into_owned();
         let dest_file = module_dir.join(&file_name);
-        fs::copy(source_file, &dest_file)?;
+
+        if use_link {
+            let absolute_source = source_file.canonicalize().map_err(|e| {
+                std::io::Error::new(std::io::ErrorKind::InvalidInput, format!("Cannot resolve path: {}", e))
+            })?;
+            std::os::unix::fs::symlink(&absolute_source, &dest_file)?;
+        } else {
+            fs::copy(source_file, &dest_file)?;
+        }
 
         let manifest = format!(
             r#"<?xml version="1.0"?>
